@@ -2,7 +2,6 @@
 import numpy as np
 from . import constants as C
 from .rendering import Body
-from .jit import apply_boundary_conditions_jit
 
 
 def calculate_system_energies(bodies, g_constant):
@@ -77,7 +76,11 @@ def calculate_accelerations_for_all(bodies, g_constant):
             if dist_sq_sim == 0:
                 continue
             dist_sq_meters = dist_sq_sim * (C.SPACE_SCALE ** 2)
-            acc_mag = g_constant * other_body.mass / (dist_sq_meters + C.SOFTENING_FACTOR_SQ + 1e-18)
+            acc_mag = (
+                g_constant
+                * other_body.mass
+                / (dist_sq_meters + C.SOFTENING_FACTOR_SQ + 1e-18)
+            )
             dist_sim = np.sqrt(dist_sq_sim)
             direction = dist_vec_sim / dist_sim
             acc_i += direction * acc_mag
@@ -114,7 +117,16 @@ def perform_rk4_step(bodies, dt, g_constant):
     k4_vel = end_vel_k4
     final_pos_sim = initial_pos_sim.copy()
     final_vel_m_s = initial_vel_m_s.copy()
-    pos_update = (dt / 6.0) * (k1_vel/C.SPACE_SCALE + 2*k2_vel/C.SPACE_SCALE + 2*k3_vel/C.SPACE_SCALE + k4_vel/C.SPACE_SCALE)
+    pos_update = (
+        dt
+        / 6.0
+        * (
+            k1_vel / C.SPACE_SCALE
+            + 2 * k2_vel / C.SPACE_SCALE
+            + 2 * k3_vel / C.SPACE_SCALE
+            + k4_vel / C.SPACE_SCALE
+        )
+    )
     vel_update = (dt / 6.0) * (k1_acc + 2*k2_acc + 2*k3_acc + k4_acc)
     final_pos_sim[~fixed_mask] += pos_update[~fixed_mask]
     final_vel_m_s[~fixed_mask] += vel_update[~fixed_mask]
@@ -138,7 +150,11 @@ def calculate_accelerations_from_temp(temp_bodies_list, g_constant):
             if dist_sq_sim == 0:
                 continue
             dist_sq_meters = dist_sq_sim * (C.SPACE_SCALE ** 2)
-            acc_mag = g_constant * other_tb['mass'] / (dist_sq_meters + C.SOFTENING_FACTOR_SQ + 1e-18)
+            acc_mag = (
+                g_constant
+                * other_tb['mass']
+                / (dist_sq_meters + C.SOFTENING_FACTOR_SQ + 1e-18)
+            )
             dist_sim = np.sqrt(dist_sq_sim)
             direction = dist_vec_sim / dist_sim
             acc_i += direction * acc_mag
@@ -168,8 +184,12 @@ def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_bound
             continue
         pos_error_sim = np.linalg.norm(pos2[i] - pos1[i])
         vel_error_m_s = np.linalg.norm(vel2[i] - vel1[i])
-        pos_scale = np.linalg.norm(pos2[i]) + np.linalg.norm(initial_pos_sim[i]) + 1e-9 * C.SPACE_SCALE
-        vel_scale = np.linalg.norm(vel2[i]) + np.linalg.norm(initial_vel_m_s[i]) + 1e-6
+        pos_scale = (
+            np.linalg.norm(pos2[i]) + np.linalg.norm(initial_pos_sim[i]) + 1e-9 * C.SPACE_SCALE
+        )
+        vel_scale = (
+            np.linalg.norm(vel2[i]) + np.linalg.norm(initial_vel_m_s[i]) + 1e-6
+        )
         rel_pos_error = pos_error_sim / pos_scale if pos_scale > 1e-15 else 0
         rel_vel_error = vel_error_m_s / vel_scale if vel_scale > 1e-15 else 0
         current_body_error = max(rel_pos_error, rel_vel_error)
@@ -229,19 +249,25 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
                         continue
                     if body1.mass >= body2.mass:
                         survivor, removed = body1, body2
-                        survivor_idx, removed_idx = i, j
+                        removed_idx = j
                     else:
                         survivor, removed = body2, body1
-                        survivor_idx, removed_idx = j, i
+                        removed_idx = i
                     total_mass = survivor.mass + removed.mass
                     if total_mass == 0:
                         continue
-                    new_vel = (survivor.mass * survivor.vel + removed.mass * removed.vel) / total_mass
-                    new_pos = (survivor.mass * survivor.pos + removed.mass * removed.pos) / total_mass
+                    new_vel = (
+                        survivor.mass * survivor.vel + removed.mass * removed.vel
+                    ) / total_mass
+                    new_pos = (
+                        survivor.mass * survivor.pos + removed.mass * removed.pos
+                    ) / total_mass
                     survivor.mass = total_mass
                     survivor.pos = new_pos
                     survivor.vel = new_vel
-                    survivor.radius_pixels = (body1.radius_pixels**3 + body2.radius_pixels**3)**(1/3)
+                    survivor.radius_pixels = (
+                        body1.radius_pixels ** 3 + body2.radius_pixels ** 3
+                    ) ** (1 / 3)
                     survivor.name += f"+{removed.name}"
                     survivor.clear_trail()
                     if removed_idx not in indices_to_remove:

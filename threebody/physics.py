@@ -6,6 +6,7 @@ G_REAL = 6.67430e-11  # m^3 kg^-1 s^-2
 SPACE_SCALE = 5e9     # meters per simulation unit
 SOFTENING_FACTOR_SQ = 1.0**2  # m^2 softening
 
+
 class Body:
     """Simple body representation."""
     def __init__(self, mass, pos, vel, fixed=False):
@@ -17,7 +18,6 @@ class Body:
 
 def accelerations(bodies, g_constant=G_REAL):
     """Compute accelerations on each body."""
-    n = len(bodies)
     acc = [np.zeros(2, dtype=float) for _ in bodies]
     for i, bi in enumerate(bodies):
         if bi.fixed:
@@ -37,7 +37,6 @@ def accelerations(bodies, g_constant=G_REAL):
 
 def perform_rk4_step(bodies, dt, g_constant=G_REAL):
     """Advance bodies using a single RK4 step."""
-    n = len(bodies)
     pos0 = [b.pos.copy() for b in bodies]
     vel0 = [b.vel.copy() for b in bodies]
 
@@ -52,25 +51,25 @@ def perform_rk4_step(bodies, dt, g_constant=G_REAL):
     k1p = [dt * v / SPACE_SCALE for v in vel0]
 
     # k2
-    pos_k2 = [p + 0.5*k1p[i] for i,p in enumerate(pos0)]
-    vel_k2 = [v + 0.5*k1v[i] for i,v in enumerate(vel0)]
+    pos_k2 = [p + 0.5 * k1p[i] for i, p in enumerate(pos0)]
+    vel_k2 = [v + 0.5 * k1v[i] for i, v in enumerate(vel0)]
     a2 = deriv(pos_k2, vel_k2)
     k2v = [dt * a for a in a2]
-    k2p = [dt * (v + 0.5*k1v[i]) / SPACE_SCALE for i,v in enumerate(vel0)]
+    k2p = [dt * (v + 0.5 * k1v[i]) / SPACE_SCALE for i, v in enumerate(vel0)]
 
     # k3
-    pos_k3 = [p + 0.5*k2p[i] for i,p in enumerate(pos0)]
-    vel_k3 = [v + 0.5*k2v[i] for i,v in enumerate(vel0)]
+    pos_k3 = [p + 0.5 * k2p[i] for i, p in enumerate(pos0)]
+    vel_k3 = [v + 0.5 * k2v[i] for i, v in enumerate(vel0)]
     a3 = deriv(pos_k3, vel_k3)
     k3v = [dt * a for a in a3]
-    k3p = [dt * (v + 0.5*k2v[i]) / SPACE_SCALE for i,v in enumerate(vel0)]
+    k3p = [dt * (v + 0.5 * k2v[i]) / SPACE_SCALE for i, v in enumerate(vel0)]
 
     # k4
-    pos_k4 = [p + k3p[i] for i,p in enumerate(pos0)]
-    vel_k4 = [v + k3v[i] for i,v in enumerate(vel0)]
+    pos_k4 = [p + k3p[i] for i, p in enumerate(pos0)]
+    vel_k4 = [v + k3v[i] for i, v in enumerate(vel0)]
     a4 = deriv(pos_k4, vel_k4)
     k4v = [dt * a for a in a4]
-    k4p = [dt * (v + k3v[i]) / SPACE_SCALE for i,v in enumerate(vel0)]
+    k4p = [dt * (v + k3v[i]) / SPACE_SCALE for i, v in enumerate(vel0)]
 
     for i, b in enumerate(bodies):
         if b.fixed:

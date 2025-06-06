@@ -6,6 +6,7 @@ import numpy as np
 from . import constants as C
 from .jit import apply_boundary_conditions_jit
 
+
 class Body:
     """Represents a celestial body with physical and visual properties."""
     ID_counter = 0
@@ -73,8 +74,14 @@ class Body:
                     end_idx = num_points - 1
                 if start_idx >= end_idx:
                     continue
-                start_pos = (int(trail_points_pixels[start_idx][0]), int(trail_points_pixels[start_idx][1]))
-                end_pos = (int(trail_points_pixels[end_idx][0]), int(trail_points_pixels[end_idx][1]))
+                start_pos = (
+                    int(trail_points_pixels[start_idx][0]),
+                    int(trail_points_pixels[start_idx][1]),
+                )
+                end_pos = (
+                    int(trail_points_pixels[end_idx][0]),
+                    int(trail_points_pixels[end_idx][1]),
+                )
                 alpha = int(150 * (1.0 - (i / num_points)))
                 alpha = max(0, min(255, alpha))
                 if alpha > 10:
@@ -129,7 +136,6 @@ class Body:
 
 
 def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):
-    from .jit import NUMBA_AVAILABLE  # unused but keeps parity with original
     import matplotlib.cm as cm
     import numpy as np
     if not C.FIELD_RESOLUTION or not bodies:
@@ -175,7 +181,9 @@ def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):
         for x in range(resolution):
             heatmap_surface.set_at((x, y), tuple(pixels[pixel_index]))
             pixel_index += 1
-    scaled_heatmap = pygame.transform.smoothscale(heatmap_surface, (sim_width_pixels, sim_height_pixels))
+    scaled_heatmap = pygame.transform.smoothscale(
+        heatmap_surface,
+        (sim_width_pixels, sim_height_pixels),
+    )
     scaled_heatmap.set_alpha(100)
     screen.blit(scaled_heatmap, (0, 0))
-

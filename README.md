@@ -26,8 +26,9 @@ from threebody import Body, perform_rk4_step, system_energy
 
 ## Tests
 
-Unit tests can be executed with `pytest`:
+Unit tests can be executed with `pytest` and style checked with `flake8`:
 
 ```
 pytest
+flake8 threebody
 ```
