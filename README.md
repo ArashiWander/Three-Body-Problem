@@ -58,8 +58,11 @@ Install the requirements and run the unit tests with:
 
 ```bash
 pip install -r requirements.txt
-PYTHONPATH=. pytest -q
+NUMBA_DISABLE_JIT=1 PYTHONPATH=. pytest -q
 ```
+
+Disabling numba's JIT avoids startup issues on systems where the bundled
+llvmlite does not support the host CPU's features.
 
 ## License
 
