@@ -178,4 +178,3 @@ def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):
     scaled_heatmap = pygame.transform.smoothscale(heatmap_surface, (sim_width_pixels, sim_height_pixels))
     scaled_heatmap.set_alpha(100)
     screen.blit(scaled_heatmap, (0, 0))
-
