@@ -24,6 +24,18 @@ Start the interactive application with:
 python threebody/simulation_full.py
 ```
 
+### Quick Start
+
+After launching you will see a control panel on the left. To get moving quickly:
+
+1. Pick a preset from the **Preset** drop‑down (for example *Sun & Earth*).
+2. Press **SPACE** to pause or resume the motion.
+3. Drag with the **right mouse button** to create a new body – the drag
+   direction sets its starting velocity.
+4. Use the **Speed** and **Gravity** sliders to tune the simulation.
+5. Press **H** or click **Help / Controls** at any time for a full list of
+   shortcuts.
+
 The Pygame GUI lets you load presets, add new bodies and tweak the simulation
 speed or gravitational constant.  Keyboard shortcuts are listed in the in-app
 help window.
