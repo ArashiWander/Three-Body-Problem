@@ -6,9 +6,12 @@ Python scripts.
 
 ## Installation
 
-Install the package and its required dependencies:
+Install the package and its required dependencies from the repository root—the
+folder containing `pyproject.toml`:
 
 ```bash
+git clone <repo-url>
+cd Three-Body-Problem
 pip install .
 ```
 
