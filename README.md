@@ -26,7 +26,10 @@ from threebody import Body, perform_rk4_step, system_energy
 
 ## Adjusting Body Trails
 
-
+Use `Body.set_trail_length(length)` to change how many trail points a body
+retains. The length is clamped between `MIN_TRAIL_LENGTH` and
+`MAX_TRAIL_LENGTH` from `threebody.constants`. Newly created bodies use
+`DEFAULT_TRAIL_LENGTH` as the initial value.
 
 ## Collision Behaviour
 
@@ -41,8 +44,6 @@ Install the dependencies and run unit tests with:
 ```bash
 pip install -r requirements.txt
 PYTHONPATH=. pytest -q
-```
-
 ```
 
 ## License
