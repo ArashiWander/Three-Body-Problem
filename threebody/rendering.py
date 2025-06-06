@@ -20,7 +20,9 @@ class Body:
         self.color = color
         self.radius_pixels = max(1, int(radius))
         self.show_trail = show_trail
-        self.max_trail_length = int(max_trail_length)
+        clamped_length = max(C.MIN_TRAIL_LENGTH,
+                             min(C.MAX_TRAIL_LENGTH, int(max_trail_length)))
+        self.max_trail_length = clamped_length
         self.trail = deque(maxlen=self.max_trail_length)
         self.visible = True
         self.id = Body.ID_counter
@@ -46,8 +48,13 @@ class Body:
         self.trail.clear()
 
     def set_trail_length(self, length):
-        """Update maximum trail length and keep existing points."""
-        self.max_trail_length = max(1, int(length))
+        """Update maximum trail length within allowed limits and keep existing points.
+
+        ``length`` is clamped to the range ``[C.MIN_TRAIL_LENGTH, C.MAX_TRAIL_LENGTH]``.
+        """
+        clamped_length = max(C.MIN_TRAIL_LENGTH,
+                             min(C.MAX_TRAIL_LENGTH, int(length)))
+        self.max_trail_length = clamped_length
         self.trail = deque(self.trail, maxlen=self.max_trail_length)
 
     def draw(self, screen, zoom, pan_offset, draw_labels):
