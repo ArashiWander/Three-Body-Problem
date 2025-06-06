@@ -24,7 +24,7 @@ features remain available.
 Start the interactive application with:
 
 ```bash
-python threebody/simulation_full.py
+python -m threebody.simulation_full
 ```
 
 ### Quick Start
