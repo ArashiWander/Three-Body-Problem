@@ -1,10 +1,7 @@
 """Minimal physics utilities for N-body simulations."""
 import numpy as np
 
-# Physical constants
-G_REAL = 6.67430e-11  # m^3 kg^-1 s^-2
-SPACE_SCALE = 5e9     # meters per simulation unit
-SOFTENING_FACTOR_SQ = 1.0**2  # m^2 softening
+from .constants import G_REAL, SPACE_SCALE, SOFTENING_FACTOR_SQ
 
 
 class Body:
