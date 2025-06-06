@@ -61,7 +61,7 @@ class Body:
         sim_height_pixels = C.HEIGHT - C.UI_BOTTOM_HEIGHT
         if (draw_pos[0] < -margin or draw_pos[0] > sim_width_pixels + margin or
                 draw_pos[1] < -margin or draw_pos[1] > sim_height_pixels + margin):
-            pass
+            return
         if self.show_trail and len(self.trail) > 1:
             trail_points_pixels = list(self.trail)
             num_points = len(trail_points_pixels)
