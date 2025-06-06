@@ -1,4 +1,9 @@
-"""Rendering helpers and Body class."""
+"""Rendering helpers and Body class.
+
+The :class:`Body` defined here is used by the interactive pygame simulation.  It
+extends the simpler physics body with additional visual properties such as
+color, radius and trail management.
+"""
 from collections import deque
 import pygame
 import pygame.gfxdraw
@@ -28,6 +33,12 @@ class Body:
         Body.ID_counter += 1
         self.name = name if name else f"Body {self.id}"
         self.last_screen_pos = np.zeros(2)
+
+    def __repr__(self):
+        return (
+            f"Body(mass={self.mass}, pos={self.pos.tolist()}, "
+            f"vel={self.vel.tolist()}, fixed={self.fixed})"
+        )
 
     def update_physics_state(self, new_pos_sim, new_vel_m_s):
         if not self.fixed:
