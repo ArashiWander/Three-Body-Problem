@@ -24,11 +24,28 @@ The package also exposes physics helpers that can be imported from Python:
 from threebody import Body, perform_rk4_step, system_energy
 ```
 
-## Tests
+## Adjusting Body Trails
 
-Unit tests can be executed with `pytest` and style checked with `flake8`:
+
+
+## Collision Behaviour
+
+`MERGE_ON_COLLISION` controls what happens when two bodies collide. If set to
+`True` the bodies combine into one mass; otherwise they bounce using a simple
+elastic collision model.
+
+## Tests and Linting
+
+Install the dependencies and run unit tests with:
+
+```bash
+pip install -r requirements.txt
+PYTHONPATH=. pytest -q
+```
 
 ```
-pytest
-flake8 threebody
-```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
