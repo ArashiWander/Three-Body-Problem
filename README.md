@@ -4,12 +4,12 @@ This project contains a pygame based demonstration of an N-body gravitational sy
 A minimal `threebody` package is provided with physics utilities and a full
 pygame application is available in `threebody/simulation_full.py`.
 
-## Requirements
+## Installation
 
-Install dependencies with:
+Install the package and its dependencies using `pip`:
 
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
 ## Running the Simulation
