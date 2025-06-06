@@ -20,7 +20,8 @@ class Body:
         self.color = color
         self.radius_pixels = max(1, int(radius))
         self.show_trail = show_trail
-        self.trail = deque(maxlen=max_trail_length)
+        self.max_trail_length = int(max_trail_length)
+        self.trail = deque(maxlen=self.max_trail_length)
         self.visible = True
         self.id = Body.ID_counter
         Body.ID_counter += 1
@@ -43,6 +44,11 @@ class Body:
 
     def clear_trail(self):
         self.trail.clear()
+
+    def set_trail_length(self, length):
+        """Update maximum trail length and keep existing points."""
+        self.max_trail_length = max(1, int(length))
+        self.trail = deque(self.trail, maxlen=self.max_trail_length)
 
     def draw(self, screen, zoom, pan_offset, draw_labels):
         if not self.visible:
