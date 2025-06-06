@@ -6,7 +6,8 @@ more feature rich :class:`~threebody.rendering.Body` instead.
 """
 import numpy as np
 
-from .constants import G_REAL, SPACE_SCALE, SOFTENING_FACTOR_SQ
+from .constants import G_REAL, SPACE_SCALE
+from .integrators import compute_accelerations, rk4_step_arrays
 
 
 class Body:
@@ -26,64 +27,35 @@ class Body:
 
 def accelerations(bodies, g_constant=G_REAL):
     """Compute accelerations on each body."""
-    acc = [np.zeros(2, dtype=float) for _ in bodies]
-    for i, bi in enumerate(bodies):
-        if bi.fixed:
-            continue
-        for j, bj in enumerate(bodies):
-            if i == j:
-                continue
-            r_vec = bj.pos - bi.pos
-            dist_sq = np.dot(r_vec, r_vec)
-            if dist_sq == 0:
-                continue
-            dist_sq_m = dist_sq * SPACE_SCALE**2
-            factor = g_constant * bj.mass / (dist_sq_m + SOFTENING_FACTOR_SQ)
-            acc[i] += factor * r_vec / np.sqrt(dist_sq)
-    return acc
+    if not bodies:
+        return []
+
+    positions = np.array([b.pos for b in bodies], dtype=float)
+    masses = np.array([b.mass for b in bodies], dtype=float)
+    fixed_mask = np.array([b.fixed for b in bodies], dtype=bool)
+
+    acc_array = compute_accelerations(positions, masses, fixed_mask, g_constant)
+    return [acc_array[i] for i in range(len(bodies))]
 
 
 def perform_rk4_step(bodies, dt, g_constant=G_REAL):
     """Advance bodies using a single RK4 step."""
-    pos0 = [b.pos.copy() for b in bodies]
-    vel0 = [b.vel.copy() for b in bodies]
+    if not bodies:
+        return
 
-    def deriv(pos, vel):
-        temp = [Body(b.mass, p, v, b.fixed) for b, p, v in zip(bodies, pos, vel)]
-        acc = accelerations(temp, g_constant)
-        return acc
+    positions = np.array([b.pos for b in bodies], dtype=float)
+    velocities = np.array([b.vel for b in bodies], dtype=float)
+    masses = np.array([b.mass for b in bodies], dtype=float)
+    fixed_mask = np.array([b.fixed for b in bodies], dtype=bool)
 
-    # k1
-    a1 = deriv(pos0, vel0)
-    k1v = [dt * a for a in a1]
-    k1p = [dt * v / SPACE_SCALE for v in vel0]
+    new_pos, new_vel = rk4_step_arrays(
+        positions, velocities, masses, fixed_mask, dt, g_constant
+    )
 
-    # k2
-    pos_k2 = [p + 0.5 * k1p[i] for i, p in enumerate(pos0)]
-    vel_k2 = [v + 0.5 * k1v[i] for i, v in enumerate(vel0)]
-    a2 = deriv(pos_k2, vel_k2)
-    k2v = [dt * a for a in a2]
-    k2p = [dt * (v + 0.5 * k1v[i]) / SPACE_SCALE for i, v in enumerate(vel0)]
-
-    # k3
-    pos_k3 = [p + 0.5 * k2p[i] for i, p in enumerate(pos0)]
-    vel_k3 = [v + 0.5 * k2v[i] for i, v in enumerate(vel0)]
-    a3 = deriv(pos_k3, vel_k3)
-    k3v = [dt * a for a in a3]
-    k3p = [dt * (v + 0.5 * k2v[i]) / SPACE_SCALE for i, v in enumerate(vel0)]
-
-    # k4
-    pos_k4 = [p + k3p[i] for i, p in enumerate(pos0)]
-    vel_k4 = [v + k3v[i] for i, v in enumerate(vel0)]
-    a4 = deriv(pos_k4, vel_k4)
-    k4v = [dt * a for a in a4]
-    k4p = [dt * (v + k3v[i]) / SPACE_SCALE for i, v in enumerate(vel0)]
-
-    for i, b in enumerate(bodies):
-        if b.fixed:
-            continue
-        b.pos += (k1p[i] + 2*k2p[i] + 2*k3p[i] + k4p[i]) / 6.0
-        b.vel += (k1v[i] + 2*k2v[i] + 2*k3v[i] + k4v[i]) / 6.0
+    for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
+        if not fixed:
+            b.pos = p
+            b.vel = v
 
 
 def system_energy(bodies, g_constant=G_REAL):

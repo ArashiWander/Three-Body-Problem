@@ -1,12 +1,12 @@
 # Three-Body Problem Simulation
 
-This project contains a pygame based demonstration of an N-body gravitational system.
-A minimal `threebody` package is provided with physics utilities and a full
-pygame application is available in `threebody/simulation_full.py`.
+This repository provides an interactive N-body simulator built with Pygame.  The
+core physics is packaged in `threebody` so it can also be reused from other
+Python scripts.
 
 ## Installation
 
-Install the package and its dependencies using `pip`:
+Install the package and its required dependencies:
 
 ```bash
 pip install .
@@ -14,18 +14,30 @@ pip install .
 
 ## Running the Simulation
 
-```
+Start the interactive application with:
+
+```bash
 python threebody/simulation_full.py
 ```
 
-The package also exposes physics helpers that can be imported from Python:
+The Pygame GUI lets you load presets, add new bodies and tweak the simulation
+speed or gravitational constant.  Keyboard shortcuts are listed in the in-app
+help window.
+
+## Library Usage
+
+Physics helpers can also be imported programmatically:
 
 ```python
-from threebody import Body, perform_rk4_step, system_energy
+from threebody import Body, perform_rk4_step, compute_accelerations, system_energy
 ```
 
-The interactive simulation itself relies on the richer `Body` class defined in
-`threebody.rendering`, which includes drawing and trail management.
+`compute_accelerations` operates directly on NumPy arrays and is shared by both
+the lightweight `threebody.physics` module and the interactive simulation.
+`perform_rk4_step` advances bodies using a Runge–Kutta 4th order integrator.
+
+The interactive application uses a richer `Body` implementation found in
+`threebody.rendering` which adds drawing and trail management utilities.
 
 ## Adjusting Body Trails
 
@@ -40,9 +52,9 @@ retains. The length is clamped between `MIN_TRAIL_LENGTH` and
 `True` the bodies combine into one mass; otherwise they bounce using a simple
 elastic collision model.
 
-## Tests and Linting
+## Tests
 
-Install the dependencies and run unit tests with:
+Install the requirements and run the unit tests with:
 
 ```bash
 pip install -r requirements.txt
@@ -52,4 +64,3 @@ PYTHONPATH=. pytest -q
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
