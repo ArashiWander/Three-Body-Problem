@@ -35,6 +35,7 @@ except ImportError:
      # Exit if core UI library is missing
      exit()
 from .constants import *
+from . import constants as C
 from .utils import mass_to_display, distance_to_display, time_to_display
 from .presets import PRESETS
 from .rendering import Body, render_gravitational_field
@@ -583,7 +584,7 @@ def main():
             simulation_time += time_advanced_this_frame
 
             # --- Handle Collisions (after integration) ---
-            indices_to_remove = detect_and_handle_collisions(bodies, merge_on_collision=False) # Bounce default
+            indices_to_remove = detect_and_handle_collisions(bodies, merge_on_collision=C.MERGE_ON_COLLISION) # Bounce default
             if indices_to_remove:
                  # Remove merged bodies safely (iterate backwards)
                  for index in indices_to_remove:
