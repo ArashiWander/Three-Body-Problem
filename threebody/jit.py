@@ -1,4 +1,5 @@
 """JIT accelerated helpers using numba when available."""
+
 import numpy as np
 
 try:
@@ -7,8 +8,10 @@ try:
 except ImportError:  # pragma: no cover - numba optional
     def nb_njit(func):
         return func
-    nb = type('obj', (object,), {'njit': nb_njit})()
+
+    nb = type("obj", (object,), {"njit": nb_njit})()
     NUMBA_AVAILABLE = False
+
 
 @nb.njit
 def calculate_acceleration_jit(target_pos_sim, target_mass_kg, other_positions_sim,
@@ -24,8 +27,9 @@ def calculate_acceleration_jit(target_pos_sim, target_mass_kg, other_positions_s
         acc_mag = g_const * other_masses_kg[i] / (dist_sq_meters + softening_sq_m2)
         dist_sim = np.sqrt(dist_sq_sim)
         direction_vec = distance_vec_sim / dist_sim
-        acc += direction_vec * acc_mag
+    acc += direction_vec * acc_mag
     return acc
+
 
 @nb.njit
 def apply_boundary_conditions_jit(pos_sim, vel_m_s, bounds_sim, elasticity):

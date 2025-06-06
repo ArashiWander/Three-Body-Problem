@@ -26,12 +26,7 @@ from threebody import Body, perform_rk4_step, system_energy
 
 ## Adjusting Body Trails
 
-The simulation records the on-screen position of each body so a trail can be
-drawn behind it. Trail sizes are clamped between the constants `MIN_TRAIL_LENGTH`
-and `MAX_TRAIL_LENGTH` defined in `threebody/constants.py`. When creating a
-`Body` you can pass `max_trail_length` or later call
-`Body.set_trail_length(new_length)` to change it. The default value is
-`DEFAULT_TRAIL_LENGTH`.
+
 
 ## Collision Behaviour
 
@@ -48,10 +43,6 @@ pip install -r requirements.txt
 PYTHONPATH=. pytest -q
 ```
 
-Linting is performed with `flake8` (install with `pip install flake8`):
-
-```bash
-flake8
 ```
 
 ## License

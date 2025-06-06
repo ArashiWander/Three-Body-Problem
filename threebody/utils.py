@@ -1,6 +1,7 @@
 """Utility helpers for unit conversions."""
 from . import constants as C
 
+
 def mass_to_display(mass_kg: float) -> str:
     if mass_kg == 0:
         return "0 kg"
@@ -9,6 +10,7 @@ def mass_to_display(mass_kg: float) -> str:
     if mass_kg >= 0.1 * C.EARTH_MASS:
         return f"{mass_kg/C.EARTH_MASS:.2f} M⊕"
     return f"{mass_kg:.2e} kg"
+
 
 def distance_to_display(dist_meters: float) -> str:
     if dist_meters == 0:
@@ -20,6 +22,7 @@ def distance_to_display(dist_meters: float) -> str:
     if abs(dist_meters) >= 1e3:
         return f"{dist_meters/1e3:.2f} km"
     return f"{dist_meters:.1f} m"
+
 
 def time_to_display(seconds: float) -> str:
     if seconds < 0:
