@@ -1,9 +1,4 @@
-"""Shared numerical integrators for the N-body simulation.
 
-The functions in this module operate purely on NumPy arrays so they can be
-reused by both the lightweight physics utilities and the interactive Pygame
-simulation.  The implementations are vectorized for clarity and performance.
-"""
 
 from __future__ import annotations
 
@@ -30,37 +25,6 @@ def compute_accelerations(
         True for bodies that should not move.
     g_constant : float, optional
         Gravitational constant to use.
-
-    Notes
-    -----
-    Bodies occupying the exact same position are ignored to avoid numerical
-    instability.  Fixed bodies contribute to the field but experience no
-    acceleration themselves.
-    """
-    n = len(masses)
-    if n == 0:
-        return np.zeros((0, 2), dtype=float)
-
-    # Pairwise displacement vectors r_j - r_i for all i, j
-    disp = positions[np.newaxis, :, :] - positions[:, np.newaxis, :]
-    dist_sq = np.einsum("ijk,ijk->ij", disp, disp)
-
-    # Avoid singularities for self interaction or zero separation
-    np.fill_diagonal(dist_sq, np.inf)
-    zero_mask = dist_sq == 0.0
-    dist_sq[zero_mask] = np.inf
-
-    inv_dist = 1.0 / np.sqrt(dist_sq)
-    factors = g_constant * masses[np.newaxis, :] / (
-        dist_sq * SPACE_SCALE ** 2 + SOFTENING_FACTOR_SQ
-    )
-
-    # acceleration contributions along displacement vectors
-    contrib = (factors * inv_dist)[:, :, np.newaxis] * disp
-    acc = contrib.sum(axis=1)
-
-    # Fixed bodies experience no acceleration
-    acc[fixed_mask] = 0.0
 
     return acc
 
