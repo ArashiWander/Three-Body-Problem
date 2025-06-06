@@ -2,6 +2,7 @@
 import numpy as np
 from . import constants as C
 from .rendering import Body
+from .integrators import compute_accelerations, rk4_step_arrays
 
 
 def calculate_system_energies(bodies, g_constant):
@@ -61,105 +62,37 @@ def calculate_center_of_mass(bodies):
 
 
 def calculate_accelerations_for_all(bodies, g_constant):
-    accelerations = np.zeros((len(bodies), 2), dtype=np.float64)
-    if len(bodies) < 2:
-        return accelerations
-    for i, body in enumerate(bodies):
-        if body.fixed:
-            continue
-        acc_i = np.zeros(2, dtype=np.float64)
-        for j, other_body in enumerate(bodies):
-            if i == j:
-                continue
-            dist_vec_sim = other_body.pos - body.pos
-            dist_sq_sim = np.dot(dist_vec_sim, dist_vec_sim)
-            if dist_sq_sim == 0:
-                continue
-            dist_sq_meters = dist_sq_sim * (C.SPACE_SCALE ** 2)
-            acc_mag = (
-                g_constant
-                * other_body.mass
-                / (dist_sq_meters + C.SOFTENING_FACTOR_SQ + 1e-18)
-            )
-            dist_sim = np.sqrt(dist_sq_sim)
-            direction = dist_vec_sim / dist_sim
-            acc_i += direction * acc_mag
-        accelerations[i] = acc_i
-    return accelerations
+    if not bodies:
+        return np.zeros((0, 2), dtype=np.float64)
+
+    positions = np.array([b.pos for b in bodies])
+    masses = np.array([b.mass for b in bodies])
+    fixed_mask = np.array([b.fixed for b in bodies])
+
+    return compute_accelerations(positions, masses, fixed_mask, g_constant)
 
 
 def perform_rk4_step(bodies, dt, g_constant):
-    n = len(bodies)
-    if n == 0:
+    if not bodies:
         return np.array([]), np.array([])
-    initial_pos_sim = np.array([b.pos for b in bodies])
-    initial_vel_m_s = np.array([b.vel for b in bodies])
+
+    positions = np.array([b.pos for b in bodies])
+    velocities = np.array([b.vel for b in bodies])
+    masses = np.array([b.mass for b in bodies])
     fixed_mask = np.array([b.fixed for b in bodies])
-    k1_acc = calculate_accelerations_for_all(bodies, g_constant)
-    k1_vel = initial_vel_m_s.copy()
-    mid_pos_k2 = initial_pos_sim + (k1_vel * (0.5 * dt)) / C.SPACE_SCALE
-    mid_vel_k2 = initial_vel_m_s + k1_acc * (0.5 * dt)
-    temp_bodies_k2 = [{'pos': p, 'vel': v, 'mass': b.mass, 'fixed': b.fixed}
-                      for p, v, b in zip(mid_pos_k2, mid_vel_k2, bodies)]
-    k2_acc = calculate_accelerations_from_temp(temp_bodies_k2, g_constant)
-    k2_vel = mid_vel_k2
-    mid_pos_k3 = initial_pos_sim + (k2_vel * (0.5 * dt)) / C.SPACE_SCALE
-    mid_vel_k3 = initial_vel_m_s + k2_acc * (0.5 * dt)
-    temp_bodies_k3 = [{'pos': p, 'vel': v, 'mass': b.mass, 'fixed': b.fixed}
-                      for p, v, b in zip(mid_pos_k3, mid_vel_k3, bodies)]
-    k3_acc = calculate_accelerations_from_temp(temp_bodies_k3, g_constant)
-    k3_vel = mid_vel_k3
-    end_pos_k4 = initial_pos_sim + (k3_vel * dt) / C.SPACE_SCALE
-    end_vel_k4 = initial_vel_m_s + k3_acc * dt
-    temp_bodies_k4 = [{'pos': p, 'vel': v, 'mass': b.mass, 'fixed': b.fixed}
-                      for p, v, b in zip(end_pos_k4, end_vel_k4, bodies)]
-    k4_acc = calculate_accelerations_from_temp(temp_bodies_k4, g_constant)
-    k4_vel = end_vel_k4
-    final_pos_sim = initial_pos_sim.copy()
-    final_vel_m_s = initial_vel_m_s.copy()
-    pos_update = (
-        dt
-        / 6.0
-        * (
-            k1_vel / C.SPACE_SCALE
-            + 2 * k2_vel / C.SPACE_SCALE
-            + 2 * k3_vel / C.SPACE_SCALE
-            + k4_vel / C.SPACE_SCALE
-        )
-    )
-    vel_update = (dt / 6.0) * (k1_acc + 2*k2_acc + 2*k3_acc + k4_acc)
-    final_pos_sim[~fixed_mask] += pos_update[~fixed_mask]
-    final_vel_m_s[~fixed_mask] += vel_update[~fixed_mask]
-    return final_pos_sim, final_vel_m_s
+
+    return rk4_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant)
 
 
 def calculate_accelerations_from_temp(temp_bodies_list, g_constant):
-    num_bodies = len(temp_bodies_list)
-    accelerations = np.zeros((num_bodies, 2), dtype=np.float64)
-    if num_bodies < 2:
-        return accelerations
-    for i, current_tb in enumerate(temp_bodies_list):
-        if current_tb['fixed']:
-            continue
-        acc_i = np.zeros(2, dtype=np.float64)
-        for j, other_tb in enumerate(temp_bodies_list):
-            if i == j:
-                continue
-            dist_vec_sim = other_tb['pos'] - current_tb['pos']
-            dist_sq_sim = np.dot(dist_vec_sim, dist_vec_sim)
-            if dist_sq_sim == 0:
-                continue
-            dist_sq_meters = dist_sq_sim * (C.SPACE_SCALE ** 2)
-            acc_mag = (
-                g_constant
-                * other_tb['mass']
-                / (dist_sq_meters + C.SOFTENING_FACTOR_SQ + 1e-18)
-            )
-            dist_sim = np.sqrt(dist_sq_sim)
-            direction = dist_vec_sim / dist_sim
-            acc_i += direction * acc_mag
-        accelerations[i] = acc_i
-    return accelerations
+    if not temp_bodies_list:
+        return np.zeros((0, 2), dtype=np.float64)
+
+    positions = np.array([tb['pos'] for tb in temp_bodies_list])
+    masses = np.array([tb['mass'] for tb in temp_bodies_list])
+    fixed_mask = np.array([tb['fixed'] for tb in temp_bodies_list])
+
+    return compute_accelerations(positions, masses, fixed_mask, g_constant)
 
 
 def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_boundaries, bounds_sim):
