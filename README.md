@@ -26,7 +26,7 @@ help window.
 
 ## Library Usage
 
-Physics helpers are available programmatically:
+Physics helpers can also be imported programmatically:
 
 ```python
 from threebody import Body, perform_rk4_step, compute_accelerations, system_energy
@@ -36,8 +36,8 @@ from threebody import Body, perform_rk4_step, compute_accelerations, system_ener
 the lightweight `threebody.physics` module and the interactive simulation.
 `perform_rk4_step` advances bodies using a Runge–Kutta 4th order integrator.
 
-The full-featured `Body` class used by the simulation is implemented in
-`threebody.rendering` and adds drawing and trail management utilities.
+The interactive application uses a richer `Body` implementation found in
+`threebody.rendering` which adds drawing and trail management utilities.
 
 ## Adjusting Body Trails
 
