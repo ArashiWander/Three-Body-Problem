@@ -172,10 +172,12 @@ def main():
  - <b>B:</b> Toggle simulation boundaries (reflecting walls).<br>
  - <b>A:</b> Toggle adaptive time stepping.<br>
  - <b>C or HOME:</b> Center view on Center of Mass & Reset Zoom.<br>
+ - <b>Delete:</b> Remove the currently selected body.<br>
  - <b>H:</b> Show / Hide this help window.<br><br>
 
 <b>UI Panel:</b><br>
- - Use sliders and buttons to control simulation parameters, visualization, add new bodies, and edit selected body mass.<br><br>
+ - Use sliders and buttons to control simulation parameters, visualization, add new bodies, and edit selected body mass.<br>
+ - Adjust trail length with the dedicated slider.<br><br>
 
 <b>Physics Notes:</b><br>
  - Uses RK4 integration (fixed or adaptive step).<br>

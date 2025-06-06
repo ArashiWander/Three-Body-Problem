@@ -18,6 +18,11 @@ pip install -r requirements.txt
 python threebody/simulation_full.py
 ```
 
+Once running, use the keyboard and UI controls:
+
+- **Delete**: remove the currently selected body.
+- Adjust trails using the **trail length** slider in the side panel.
+
 The package also exposes physics helpers that can be imported from Python:
 
 ```python
