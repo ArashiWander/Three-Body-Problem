@@ -1,4 +1,4 @@
-"""Shared numerical integrators for the N-body simulation."""
+
 
 from __future__ import annotations
 
@@ -25,21 +25,7 @@ def compute_accelerations(
         True for bodies that should not move.
     g_constant : float, optional
         Gravitational constant to use.
-    """
-    n = len(masses)
-    acc = np.zeros((n, 2), dtype=float)
-    for i in range(n):
-        if fixed_mask[i]:
-            continue
-        for j in range(n):
-            if i == j:
-                continue
-            r_vec = positions[j] - positions[i]
-            dist_sq = np.dot(r_vec, r_vec)
-            if dist_sq == 0.0:
-                continue
-            factor = g_constant * masses[j] / (dist_sq * SPACE_SCALE ** 2 + SOFTENING_FACTOR_SQ)
-            acc[i] += factor * r_vec / np.sqrt(dist_sq)
+
     return acc
 
 
