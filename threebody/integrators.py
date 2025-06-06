@@ -26,6 +26,29 @@ def compute_accelerations(
     g_constant : float, optional
         Gravitational constant to use.
 
+    Returns
+    -------
+    (N, 2) ndarray
+        Accelerations in metres per second squared.
+    """
+
+    n = len(masses)
+    acc = np.zeros((n, 2), dtype=np.float64)
+    for i in range(n):
+        if fixed_mask[i]:
+            continue
+        for j in range(n):
+            if i == j:
+                continue
+            r_vec = positions[j] - positions[i]
+            dist_sq = float(np.dot(r_vec, r_vec))
+            if dist_sq == 0.0:
+                continue
+            dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
+            acc_mag = g_constant * masses[j] / (dist_sq_m + SOFTENING_FACTOR_SQ)
+            dist = np.sqrt(dist_sq)
+            acc[i] += (r_vec / dist) * acc_mag
+
     return acc
 
 
