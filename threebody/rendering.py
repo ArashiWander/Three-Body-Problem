@@ -47,7 +47,8 @@ class Body:
 
     def set_trail_length(self, length):
         """Update maximum trail length and keep existing points."""
-        self.max_trail_length = max(1, int(length))
+        clamped = max(C.MIN_TRAIL_LENGTH, min(int(length), C.MAX_TRAIL_LENGTH))
+        self.max_trail_length = clamped
         self.trail = deque(self.trail, maxlen=self.max_trail_length)
 
     def draw(self, screen, zoom, pan_offset, draw_labels):
