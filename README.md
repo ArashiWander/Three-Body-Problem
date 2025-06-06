@@ -36,14 +36,27 @@ elastic collision model.
 
 ## Tests and Linting
 
-Install the dependencies and run unit tests with:
+Install the dependencies first. These are heavy packages and may take a while to
+download and compile:
 
 ```bash
 pip install -r requirements.txt
-PYTHONPATH=. pytest -q
 ```
 
-```
+Run the tests using one of the following options:
+
+1. Without installing the package:
+
+   ```bash
+   PYTHONPATH=. pytest -q
+   ```
+
+2. Install in editable mode first:
+
+   ```bash
+   pip install -e .
+   pytest -q
+   ```
 
 ## License
 
