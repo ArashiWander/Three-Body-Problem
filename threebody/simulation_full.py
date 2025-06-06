@@ -144,6 +144,16 @@ def main():
     y_pos += 20
     selected_mass_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), start_value=0.5, value_range=(0.0, 1.0), manager=ui_manager, container=control_panel)
     selected_mass_slider.disable() # Disabled by default
+    y_pos += 30
+    trail_length_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+                                                    text=f"Trail: {DEFAULT_TRAIL_LENGTH}", manager=ui_manager,
+                                                    container=control_panel)
+    y_pos += 20
+    trail_length_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+                                                                 start_value=DEFAULT_TRAIL_LENGTH,
+                                                                 value_range=(MIN_TRAIL_LENGTH, MAX_TRAIL_LENGTH),
+                                                                 manager=ui_manager, container=control_panel)
+    trail_length_slider.disable()
     y_pos += 40
     # --- END Selected Body Controls ---
 
@@ -175,7 +185,8 @@ def main():
  - <b>H:</b> Show / Hide this help window.<br><br>
 
 <b>UI Panel:</b><br>
- - Use sliders and buttons to control simulation parameters, visualization, add new bodies, and edit selected body mass.<br><br>
+ - Use sliders and buttons to control simulation parameters, visualization, add new bodies, and edit selected body mass.<br>
+ - Adjust trail length for the selected body using the Trail slider.<br><br>
 
 <b>Physics Notes:</b><br>
  - Uses RK4 integration (fixed or adaptive step).<br>
@@ -261,6 +272,9 @@ def main():
         selected_body_name_label.set_text("Name: None")
         selected_body_mass_label.set_text("Mass: N/A")
         selected_mass_slider.disable()
+        trail_length_slider.set_current_value(DEFAULT_TRAIL_LENGTH)
+        trail_length_label.set_text(f"Trail: {DEFAULT_TRAIL_LENGTH}")
+        trail_length_slider.disable()
         # <<< Reset gravity multiplier and slider on preset load to new default >>>
         gravity_multiplier = 10.0
         gravity_slider.set_current_value(gravity_multiplier)
@@ -377,6 +391,15 @@ def main():
                             selected_body.mass = new_mass
                             # Update the label
                             selected_body_mass_label.set_text(f"Mass: {mass_to_display(selected_body.mass)}")
+                    elif event.ui_element == trail_length_slider:
+                        new_length = int(event.value)
+                        trail_length_label.set_text(f"Trail: {new_length}")
+                        if selected_body:
+                            selected_body.set_trail_length(new_length)
+                        else:
+                            for body in bodies:
+                                body.set_trail_length(new_length)
+                        status_text_label.set_text(f"Trail length: {new_length}")
 
 
             # --- Handle Mouse & Keyboard Input (if not over UI panel for relevant events) ---
@@ -413,9 +436,12 @@ def main():
                                      slider_val = max(0.0, min(1.0, slider_val)) # Clamp
                                 selected_mass_slider.set_current_value(slider_val)
                                 selected_mass_slider.enable()
+                                trail_length_slider.set_current_value(selected_body.max_trail_length)
+                                trail_length_label.set_text(f"Trail: {selected_body.max_trail_length}")
+                                trail_length_slider.enable()
                             else:
                                 selected_mass_slider.disable() # Cannot edit fixed body mass
-
+                                trail_length_slider.disable()
                         else: # Clicked background
                             selected_body = None # Deselect
                             dragging_body = False
@@ -426,6 +452,7 @@ def main():
                             selected_body_name_label.set_text("Name: None")
                             selected_body_mass_label.set_text("Mass: N/A")
                             selected_mass_slider.disable()
+                            trail_length_slider.disable()
 
 
                     elif event.button == 3:  # Right click - Start adding body
