@@ -1,4 +1,9 @@
-"""Minimal physics utilities for N-body simulations."""
+"""Minimal physics utilities for N-body simulations.
+
+This module defines a lightweight :class:`Body` class intended purely for
+physics calculations and unit tests.  The pygame-based simulation uses the
+more feature rich :class:`~threebody.rendering.Body` instead.
+"""
 import numpy as np
 
 # Physical constants
@@ -8,12 +13,18 @@ SOFTENING_FACTOR_SQ = 1.0**2  # m^2 softening
 
 
 class Body:
-    """Simple body representation."""
+    """Simple body representation for physics computations."""
     def __init__(self, mass, pos, vel, fixed=False):
         self.mass = float(mass)
         self.pos = np.asarray(pos, dtype=float)
         self.vel = np.asarray(vel, dtype=float)
         self.fixed = fixed
+
+    def __repr__(self):
+        return (
+            f"Body(mass={self.mass}, pos={self.pos.tolist()}, "
+            f"vel={self.vel.tolist()}, fixed={self.fixed})"
+        )
 
 
 def accelerations(bodies, g_constant=G_REAL):

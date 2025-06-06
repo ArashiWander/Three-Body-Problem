@@ -24,6 +24,9 @@ The package also exposes physics helpers that can be imported from Python:
 from threebody import Body, perform_rk4_step, system_energy
 ```
 
+The interactive simulation itself relies on the richer `Body` class defined in
+`threebody.rendering`, which includes drawing and trail management.
+
 ## Adjusting Body Trails
 
 
