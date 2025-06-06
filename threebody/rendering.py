@@ -20,12 +20,18 @@ class Body:
         self.color = color
         self.radius_pixels = max(1, int(radius))
         self.show_trail = show_trail
-        self.trail = deque(maxlen=max_trail_length)
+        self.max_trail_length = int(max_trail_length)
+        self.trail = deque(maxlen=self.max_trail_length)
         self.visible = True
         self.id = Body.ID_counter
         Body.ID_counter += 1
         self.name = name if name else f"Body {self.id}"
         self.last_screen_pos = np.zeros(2)
+
+    def set_trail_length(self, length):
+        """Update maximum trail length and keep existing points."""
+        self.max_trail_length = max(1, int(length))
+        self.trail = deque(self.trail, maxlen=self.max_trail_length)
 
     def update_physics_state(self, new_pos_sim, new_vel_m_s):
         if not self.fixed:

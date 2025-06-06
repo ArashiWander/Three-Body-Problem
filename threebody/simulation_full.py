@@ -106,6 +106,15 @@ def main():
     trails_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, y_pos), ((UI_SIDEBAR_WIDTH - 30) // 2, 30)), text=f"Trails: {'ON' if SHOW_TRAILS else 'OFF'}", manager=ui_manager, container=control_panel)
     gfield_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(((UI_SIDEBAR_WIDTH - 30) // 2 + 20, y_pos), ((UI_SIDEBAR_WIDTH - 30) // 2, 30)), text=f"Grav Field: {'OFF'}", manager=ui_manager, container=control_panel)
     y_pos += 40
+    trail_len_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+                                                 text=f"Trail Length: {DEFAULT_TRAIL_LENGTH}",
+                                                 manager=ui_manager, container=control_panel)
+    y_pos += 20
+    trail_len_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+                                                             start_value=DEFAULT_TRAIL_LENGTH,
+                                                             value_range=(MIN_TRAIL_LENGTH, MAX_TRAIL_LENGTH),
+                                                             manager=ui_manager, container=control_panel)
+    y_pos += 30
     boundaries_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 30)), text="Boundaries: ON", manager=ui_manager, container=control_panel)
     y_pos += 40
     pygame_gui.elements.UILabel(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), text="Camera", manager=ui_manager, container=control_panel, object_id='#section_header')
@@ -207,6 +216,7 @@ def main():
     simulation_time = 0.0 # Total simulated time elapsed (seconds)
     next_body_mass = DEFAULT_NEXT_BODY_MASS
     next_body_radius_pixels = DEFAULT_NEXT_BODY_RADIUS_PIXELS
+    trail_length = DEFAULT_TRAIL_LENGTH
     frame_times = deque(maxlen=60) # For FPS calculation
     color_options = [EARTH_COLOR, MARS_COLOR, VENUS_COLOR, MERCURY_COLOR, GAS_COLOR, ICE_COLOR, STAR_COLORS[1], STAR_COLORS[2]]
     color_index = 0
@@ -224,7 +234,7 @@ def main():
         # Use nonlocal for camera variables as well, since they are now defined in main
         nonlocal target_zoom, target_pan, current_zoom, current_pan
         # <<< Use nonlocal for gravity_multiplier >>>
-        nonlocal gravity_multiplier
+        nonlocal gravity_multiplier, trail_length
         # Use global for module-level DEBUG counters
         global DEBUG_DRAW_COUNT, DEBUG_COLLISION_COUNT, DEBUG_PHYSICS_COUNT
         DEBUG_DRAW_COUNT = 0 # Reset debug counters
@@ -251,8 +261,10 @@ def main():
             fixed = body_config.get("fixed", False)
             name = body_config.get("name", f"Body_{Body.ID_counter}")
 
-            bodies.append(Body(mass, x_sim, y_sim, vx_m_s, vy_m_s, color, radius_px,
-                               fixed=fixed, name=name, show_trail=SHOW_TRAILS))
+            body = Body(mass, x_sim, y_sim, vx_m_s, vy_m_s, color, radius_px,
+                         fixed=fixed, name=name, show_trail=SHOW_TRAILS)
+            body.set_trail_length(trail_length)
+            bodies.append(body)
 
         simulation_time = 0.0
         time_step = TIME_STEP_BASE # Reset adaptive step size
@@ -265,6 +277,9 @@ def main():
         gravity_multiplier = 10.0
         gravity_slider.set_current_value(gravity_multiplier)
         gravity_label.set_text(f"Gravity: {gravity_multiplier:.2f}x")
+        trail_length = DEFAULT_TRAIL_LENGTH
+        trail_len_slider.set_current_value(trail_length)
+        trail_len_label.set_text(f"Trail Length: {trail_length}")
         # <<< End Reset >>>
         status_text_label.set_text(f"Preset loaded: {preset_name}")
         # Reset camera to view the new preset
@@ -284,6 +299,7 @@ def main():
     load_preset(current_preset_name)
     # Set initial gravity slider value
     gravity_slider.set_current_value(gravity_multiplier)
+    trail_len_slider.set_current_value(trail_length)
 
 
     # --- Main Game Loop ---
@@ -377,6 +393,11 @@ def main():
                             selected_body.mass = new_mass
                             # Update the label
                             selected_body_mass_label.set_text(f"Mass: {mass_to_display(selected_body.mass)}")
+                    elif event.ui_element == trail_len_slider:
+                        trail_length = int(event.value)
+                        trail_len_label.set_text(f"Trail Length: {trail_length}")
+                        for b in bodies:
+                            b.set_trail_length(trail_length)
 
 
             # --- Handle Mouse & Keyboard Input (if not over UI panel for relevant events) ---
@@ -472,16 +493,17 @@ def main():
                              vel_m_s = drag_vector_world * VELOCITY_DRAG_SCALE
 
                              # Create new body
-                             new_body = Body(
-                                 mass=next_body_mass,
-                                 x=add_start_world[0], y=add_start_world[1], # Sim units
-                                 vx=vel_m_s[0], vy=vel_m_s[1], # m/s
-                                 color=color_options[color_index],
-                                 radius=next_body_radius_pixels, # Pixels
-                                 name=f"Body_{Body.ID_counter}", # ID increments in Body init
-                                 show_trail=SHOW_TRAILS
-                             )
-                             bodies.append(new_body)
+                            new_body = Body(
+                                mass=next_body_mass,
+                                x=add_start_world[0], y=add_start_world[1], # Sim units
+                                vx=vel_m_s[0], vy=vel_m_s[1], # m/s
+                                color=color_options[color_index],
+                                radius=next_body_radius_pixels, # Pixels
+                                name=f"Body_{Body.ID_counter}", # ID increments in Body init
+                                show_trail=SHOW_TRAILS
+                            )
+                            new_body.set_trail_length(trail_length)
+                            bodies.append(new_body)
                              status_text_label.set_text(f"Added {new_body.name}")
                              color_index = (color_index + 1) % len(color_options)
                          adding_body_state = 0 # Reset state regardless
@@ -524,7 +546,7 @@ def main():
                       # Modify module-level variable directly
                       ADAPTIVE_STEPPING = not ADAPTIVE_STEPPING
                       adaptive_button.set_text(f"Adaptive Step: {'ON' if ADAPTIVE_STEPPING else 'OFF'}")
-                 elif event.key == pygame.K_c or event.key == pygame.K_HOME:
+                elif event.key == pygame.K_c or event.key == pygame.K_HOME:
                       target_zoom = ZOOM_BASE
                       com_pos, _ = calculate_center_of_mass(bodies)
                       if com_pos is not None:
@@ -534,9 +556,15 @@ def main():
                       # Instantly update current camera as well
                       current_zoom = target_zoom
                       current_pan = target_pan.copy()
-                 elif event.key == pygame.K_h:
+                elif event.key == pygame.K_h:
                       if help_window.visible: help_window.hide()
                       else: help_window.show()
+                elif event.key == pygame.K_DELETE and selected_body:
+                     bodies.remove(selected_body)
+                     selected_body = None
+                     selected_body_name_label.set_text("Name: None")
+                     selected_body_mass_label.set_text("Mass: N/A")
+                     selected_mass_slider.disable()
 
 
         # --- Smooth Camera Motion ---
