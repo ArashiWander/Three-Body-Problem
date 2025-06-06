@@ -26,8 +26,14 @@ from threebody import Body, perform_rk4_step, system_energy
 
 ## Tests
 
-Unit tests can be executed with `pytest`:
+Before running the tests, install the required dependencies:
 
+```bash
+pip install -r requirements.txt
 ```
-pytest
+
+Execute the test suite using the module form of pytest:
+
+```bash
+python -m pytest
 ```
