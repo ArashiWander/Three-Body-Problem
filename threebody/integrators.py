@@ -1,8 +1,8 @@
 """Shared numerical integrators for the N-body simulation.
 
 The functions in this module operate purely on NumPy arrays so they can be
-reused by both the lightweight physics utilities and the interactive pygame
-simulation.  The implementations are vectorised for clarity and performance.
+reused by both the lightweight physics utilities and the interactive Pygame
+simulation.  The implementations are vectorized for clarity and performance.
 """
 
 from __future__ import annotations
