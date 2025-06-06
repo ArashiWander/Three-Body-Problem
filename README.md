@@ -12,6 +12,10 @@ Install the package and its required dependencies:
 pip install .
 ```
 
+Numba is used for optional JIT acceleration. If it is missing or fails to
+initialize, the simulation automatically falls back to pure Python code so all
+features remain available.
+
 ## Running the Simulation
 
 Start the interactive application with:

@@ -1,11 +1,16 @@
-"""JIT accelerated helpers using numba when available."""
+"""JIT accelerated helpers using numba when available.
+
+If numba fails to import or initialize for any reason, these helpers fall back
+to pure Python implementations so the package continues to work without JIT
+acceleration.
+"""
 
 import numpy as np
 
 try:
     import numba as nb
     NUMBA_AVAILABLE = True
-except ImportError:  # pragma: no cover - numba optional
+except Exception:  # pragma: no cover - numba optional or misconfigured
     def nb_njit(func):
         return func
 
