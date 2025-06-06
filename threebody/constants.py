@@ -63,7 +63,8 @@ INITIAL_PAN_OFFSET = np.array([(WIDTH - UI_SIDEBAR_WIDTH)/2,
                               dtype=np.float64)
 CAMERA_SMOOTHING = 0.05
 ZOOM_FACTOR = 1.2
-BODY_ZOOM_SCALING_POWER = 0.2
+# Scale body size linearly with zoom for clearer close ups
+BODY_ZOOM_SCALING_POWER = 1.0
 
 DEFAULT_NEXT_BODY_MASS = EARTH_MASS
 DEFAULT_NEXT_BODY_RADIUS_PIXELS = 8

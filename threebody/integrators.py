@@ -33,21 +33,27 @@ def compute_accelerations(
     """
 
     n = len(masses)
+    if n == 0:
+        return np.zeros((0, 2), dtype=np.float64)
+
     acc = np.zeros((n, 2), dtype=np.float64)
     for i in range(n):
         if fixed_mask[i]:
             continue
-        for j in range(n):
-            if i == j:
-                continue
-            r_vec = positions[j] - positions[i]
-            dist_sq = float(np.dot(r_vec, r_vec))
-            if dist_sq == 0.0:
-                continue
-            dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
-            acc_mag = g_constant * masses[j] / (dist_sq_m + SOFTENING_FACTOR_SQ)
-            dist = np.sqrt(dist_sq)
-            acc[i] += (r_vec / dist) * acc_mag
+
+        r_vec = positions - positions[i]
+        dist_sq = np.einsum("ij,ij->i", r_vec, r_vec)
+        dist_sq[i] = np.inf  # ignore self
+
+        dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
+
+        inv_dist = np.zeros_like(dist_sq)
+        mask = dist_sq > 0.0
+        inv_dist[mask] = 1.0 / np.sqrt(dist_sq[mask])
+
+        factors = g_constant * masses / (dist_sq_m + SOFTENING_FACTOR_SQ)
+
+        acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
 
     return acc
 
