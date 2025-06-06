@@ -18,6 +18,12 @@ pip install -r requirements.txt
 python threebody/simulation_full.py
 ```
 
+### Controls
+
+- **Delete key:** remove the currently selected body.
+- **Trail Length slider:** adjust how long body trails are drawn.
+- **Merge button:** toggle whether collisions bounce or merge bodies.
+
 The package also exposes physics helpers that can be imported from Python:
 
 ```python

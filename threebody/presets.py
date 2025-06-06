@@ -1,0 +1,35 @@
+"""Celestial presets used by the simulation."""
+from . import constants as C
+
+PRESETS = {
+    "Empty": [],
+    "Sun & Earth": [
+        {"mass": C.SOLAR_MASS, "x": 0, "y": 0, "vx": 0, "vy": 0, "color": C.SUN_COLOR, "radius": 15, "name": "Sun", "fixed": True},
+        {"mass": C.EARTH_MASS, "x": C.AU / C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 29780, "color": C.EARTH_COLOR, "radius": 8, "name": "Earth"}
+    ],
+    "Earth & Moon": [
+        {"mass": C.EARTH_MASS, "x": 0, "y": 0, "vx": 0, "vy": 0, "color": C.EARTH_COLOR, "radius": 12, "name": "Earth", "fixed": True},
+        {"mass": 7.342e22, "x": 384400e3 / C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 1022, "color": C.LIGHT_GRAY, "radius": 5, "name": "Moon"}
+    ],
+    "Binary Star": [
+        {"mass": 1.0 * C.SOLAR_MASS, "x": -0.5*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 15000, "color": C.STAR_COLORS[0], "radius": 10, "name": "Star A"},
+        {"mass": 1.0 * C.SOLAR_MASS, "x": 0.5*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": -15000, "color": C.STAR_COLORS[2], "radius": 10, "name": "Star B"}
+    ],
+    "Figure 8": [
+        {"mass": C.SOLAR_MASS, "x": -0.97000436 * C.AU/C.SPACE_SCALE, "y": 0.24308753 * C.AU/C.SPACE_SCALE, "vx": 0.46620368 * 30000, "vy": 0.43236573 * 30000, "color": C.STAR_COLORS[0], "radius": 8, "name": "Body A"},
+        {"mass": C.SOLAR_MASS, "x": 0, "y": 0, "vx": -0.93240737 * 30000, "vy": -0.86473146 * 30000, "color": C.STAR_COLORS[1], "radius": 8, "name": "Body B"},
+        {"mass": C.SOLAR_MASS, "x": 0.97000436 * C.AU/C.SPACE_SCALE, "y": -0.24308753 * C.AU/C.SPACE_SCALE, "vx": 0.46620368 * 30000, "vy": 0.43236573 * 30000, "color": C.STAR_COLORS[2], "radius": 8, "name": "Body C"}
+    ],
+    "Inner Solar System": [
+        {"mass": C.SOLAR_MASS, "x": 0, "y": 0, "vx": 0, "vy": 0, "color": C.SUN_COLOR, "radius": 20, "name": "Sun", "fixed": True},
+        {"mass": 3.301e23, "x": 0.387*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 47870, "color": C.MERCURY_COLOR, "radius": 4, "name": "Mercury"},
+        {"mass": 4.867e24, "x": 0.723*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 35020, "color": C.VENUS_COLOR, "radius": 7, "name": "Venus"},
+        {"mass": C.EARTH_MASS, "x": 1.0*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 29780, "color": C.EARTH_COLOR, "radius": 8, "name": "Earth"},
+        {"mass": 6.417e23, "x": 1.524*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 24070, "color": C.MARS_COLOR, "radius": 6, "name": "Mars"}
+    ],
+    "Three-Body Chaos": [
+        {"mass": C.SOLAR_MASS, "x": 0, "y": 0, "vx": 0, "vy": 0, "color": C.SUN_COLOR, "radius": 15, "name": "Central Mass", "fixed": True},
+        {"mass": 1.0 * C.JUPITER_MASS, "x": 1.5*C.AU/C.SPACE_SCALE, "y": 0, "vx": 0, "vy": 15000, "color": C.JUPITER_COLOR, "radius": 10, "name": "Planet 1"},
+        {"mass": 0.5 * C.JUPITER_MASS, "x": -2.0*C.AU/C.SPACE_SCALE, "y": 0.5*C.AU/C.SPACE_SCALE, "vx": 5000, "vy": -10000, "color": C.GAS_COLOR, "radius": 8, "name": "Planet 2"}
+    ],
+}
