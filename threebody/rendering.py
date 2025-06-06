@@ -20,7 +20,11 @@ class Body:
         self.color = color
         self.radius_pixels = max(1, int(radius))
         self.show_trail = show_trail
-        self.trail = deque(maxlen=max_trail_length)
+        self.max_trail_length = max(
+            C.MIN_TRAIL_LENGTH,
+            min(int(max_trail_length), C.MAX_TRAIL_LENGTH),
+        )
+        self.trail = deque(maxlen=self.max_trail_length)
         self.visible = True
         self.id = Body.ID_counter
         Body.ID_counter += 1
@@ -44,6 +48,12 @@ class Body:
     def clear_trail(self):
         self.trail.clear()
 
+    def set_trail_length(self, length):
+        """Update trail length within defined limits and keep existing points."""
+        clamped = max(C.MIN_TRAIL_LENGTH, min(int(length), C.MAX_TRAIL_LENGTH))
+        self.max_trail_length = clamped
+        self.trail = deque(self.trail, maxlen=clamped)
+
     def draw(self, screen, zoom, pan_offset, draw_labels):
         if not self.visible:
             return
@@ -52,9 +62,13 @@ class Body:
         margin = 100
         sim_width_pixels = C.WIDTH - C.UI_SIDEBAR_WIDTH
         sim_height_pixels = C.HEIGHT - C.UI_BOTTOM_HEIGHT
-        if (draw_pos[0] < -margin or draw_pos[0] > sim_width_pixels + margin or
-                draw_pos[1] < -margin or draw_pos[1] > sim_height_pixels + margin):
-            pass
+        if (
+            draw_pos[0] < -margin
+            or draw_pos[0] > sim_width_pixels + margin
+            or draw_pos[1] < -margin
+            or draw_pos[1] > sim_height_pixels + margin
+        ):
+            return
         if self.show_trail and len(self.trail) > 1:
             trail_points_pixels = list(self.trail)
             num_points = len(trail_points_pixels)
