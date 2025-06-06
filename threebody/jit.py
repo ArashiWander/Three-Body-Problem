@@ -35,7 +35,7 @@ def calculate_acceleration_jit(target_pos_sim, target_mass_kg, other_positions_s
         acc_mag = g_const * other_masses_kg[i] / (dist_sq_meters + softening_sq_m2)
         dist_sim = np.sqrt(dist_sq_sim)
         direction_vec = distance_vec_sim / dist_sim
-    acc += direction_vec * acc_mag
+        acc += direction_vec * acc_mag
     return acc
 
 
