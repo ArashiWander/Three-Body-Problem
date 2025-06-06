@@ -1,4 +1,3 @@
-import math
 from threebody.utils import mass_to_display, distance_to_display, time_to_display
 from threebody import constants as C
 
