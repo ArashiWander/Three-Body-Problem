@@ -1,4 +1,9 @@
-"""Shared numerical integrators for the N-body simulation."""
+"""Shared numerical integrators for the N-body simulation.
+
+The functions in this module operate purely on NumPy arrays so they can be
+reused by both the lightweight physics utilities and the interactive pygame
+simulation.  The implementations are vectorised for clarity and performance.
+"""
 
 from __future__ import annotations
 
@@ -25,21 +30,38 @@ def compute_accelerations(
         True for bodies that should not move.
     g_constant : float, optional
         Gravitational constant to use.
+
+    Notes
+    -----
+    Bodies occupying the exact same position are ignored to avoid numerical
+    instability.  Fixed bodies contribute to the field but experience no
+    acceleration themselves.
     """
     n = len(masses)
-    acc = np.zeros((n, 2), dtype=float)
-    for i in range(n):
-        if fixed_mask[i]:
-            continue
-        for j in range(n):
-            if i == j:
-                continue
-            r_vec = positions[j] - positions[i]
-            dist_sq = np.dot(r_vec, r_vec)
-            if dist_sq == 0.0:
-                continue
-            factor = g_constant * masses[j] / (dist_sq * SPACE_SCALE ** 2 + SOFTENING_FACTOR_SQ)
-            acc[i] += factor * r_vec / np.sqrt(dist_sq)
+    if n == 0:
+        return np.zeros((0, 2), dtype=float)
+
+    # Pairwise displacement vectors r_j - r_i for all i, j
+    disp = positions[np.newaxis, :, :] - positions[:, np.newaxis, :]
+    dist_sq = np.einsum("ijk,ijk->ij", disp, disp)
+
+    # Avoid singularities for self interaction or zero separation
+    np.fill_diagonal(dist_sq, np.inf)
+    zero_mask = dist_sq == 0.0
+    dist_sq[zero_mask] = np.inf
+
+    inv_dist = 1.0 / np.sqrt(dist_sq)
+    factors = g_constant * masses[np.newaxis, :] / (
+        dist_sq * SPACE_SCALE ** 2 + SOFTENING_FACTOR_SQ
+    )
+
+    # acceleration contributions along displacement vectors
+    contrib = (factors * inv_dist)[:, :, np.newaxis] * disp
+    acc = contrib.sum(axis=1)
+
+    # Fixed bodies experience no acceleration
+    acc[fixed_mask] = 0.0
+
     return acc
 
 
