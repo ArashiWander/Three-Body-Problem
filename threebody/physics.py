@@ -17,7 +17,6 @@ class Body:
 
 def accelerations(bodies, g_constant=G_REAL):
     """Compute accelerations on each body."""
-    n = len(bodies)
     acc = [np.zeros(2, dtype=float) for _ in bodies]
     for i, bi in enumerate(bodies):
         if bi.fixed:
@@ -37,7 +36,6 @@ def accelerations(bodies, g_constant=G_REAL):
 
 def perform_rk4_step(bodies, dt, g_constant=G_REAL):
     """Advance bodies using a single RK4 step."""
-    n = len(bodies)
     pos0 = [b.pos.copy() for b in bodies]
     vel0 = [b.vel.copy() for b in bodies]
 
