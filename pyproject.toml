@@ -12,6 +12,6 @@ dependencies = [
     "numpy",
     "matplotlib",
     "numba",
-    "pygame",
+    "pygame-ce>=2.5.4",
     "pygame_gui",
 ]
