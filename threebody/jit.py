@@ -9,7 +9,10 @@ except ImportError:  # pragma: no cover - numba optional
     def nb_njit(func):
         return func
 
-    nb = type("obj", (object,), {"njit": nb_njit})()
+    class DummyNB:
+        njit = staticmethod(nb_njit)
+
+    nb = DummyNB()
     NUMBA_AVAILABLE = False
 
 
