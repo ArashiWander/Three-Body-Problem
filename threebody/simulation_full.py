@@ -1,6 +1,5 @@
 import pygame
 import math
-import random
 import numpy as np
 import pygame.gfxdraw
 
@@ -21,7 +20,6 @@ except ImportError:
 
 
 import time
-import os
 from collections import deque
 # Ensure Pygame GUI is installed: pip install pygame_gui
 try:
