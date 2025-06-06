@@ -58,6 +58,21 @@ the lightweight `threebody.physics` module and the interactive simulation.
 The interactive application uses a richer `Body` implementation found in
 `threebody.rendering` which adds drawing and trail management utilities.
 
+## Coordinate Units
+
+Positions in `threebody` are expressed in **simulation units**.  One unit
+corresponds to `SPACE_SCALE` metres (see `threebody.constants`).  Velocities are
+always given in metres per second.  When creating bodies programmatically be
+sure to convert distances from metres to simulation units:
+
+```python
+from threebody import SPACE_SCALE
+x_sim = real_distance_meters / SPACE_SCALE
+```
+
+Using unscaled metre values will make gravity appear far too weak because the
+distances become millions of times larger than intended.
+
 ## Adjusting Body Trails
 
 Use `Body.set_trail_length(length)` to change how many trail points a body
