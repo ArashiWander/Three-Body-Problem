@@ -39,7 +39,8 @@ from .constants import *
 from . import constants as C
 from . import __version__
 from .utils import mass_to_display, distance_to_display, time_to_display
-from .presets import PRESETS
+from .presets import PRESETS, PRESET_SOFTENING_LENGTHS, PRESET_INTEGRATORS
+from .integrators import symplectic_step_arrays
 from .rendering import Body, render_gravitational_field
 from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_rk4_step, detect_and_handle_collisions, get_world_bounds_sim
 
@@ -48,7 +49,7 @@ from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_
 
 
 # --- Main Simulation Function ---
-def main(softening_length_override=None):
+def main(softening_length_override=None, integrator_choice="rk4"):
     """Main simulation loop."""
     # <<< Declare global flags modified within main's event loop >>>
     global SHOW_TRAILS, SHOW_GRAV_FIELD, ADAPTIVE_STEPPING, SPEED_FACTOR
@@ -226,6 +227,7 @@ def main(softening_length_override=None):
     add_body_start_screen = np.zeros(2) # Screen position where right-click started
     # <<< Gravity multiplier state - Default set to 10.0 >>>
     gravity_multiplier = 10.0
+    current_integrator = integrator_choice
     # --- End Simulation State Variables ---
 
 
@@ -238,6 +240,7 @@ def main(softening_length_override=None):
         # <<< Use nonlocal for gravity_multiplier >>>
         nonlocal gravity_multiplier
         nonlocal softening_length_override
+        nonlocal current_integrator
 
 
         if preset_name not in PRESETS:
@@ -245,6 +248,7 @@ def main(softening_length_override=None):
             return
 
         preset_data = PRESETS[preset_name]
+        current_integrator = PRESET_INTEGRATORS.get(preset_name, current_integrator)
 
         preset_soft = PRESET_SOFTENING_LENGTHS.get(preset_name, C.SOFTENING_LENGTH)
         new_soft = softening_length_override if softening_length_override is not None else preset_soft
@@ -591,16 +595,35 @@ def main(softening_length_override=None):
             # Get world bounds for boundary checks (in simulation units)
             world_bounds_sim = get_world_bounds_sim(current_zoom, current_pan) if use_boundaries else None
 
-            if ADAPTIVE_STEPPING:
-                # Adaptive step updates bodies internally if accepted
+            if ADAPTIVE_STEPPING and current_integrator == "rk4":
                 time_advanced, next_dt_suggestion = adaptive_rk4_step(
-                    bodies, sim_dt_propose, current_g, ERROR_TOLERANCE, use_boundaries, world_bounds_sim
+                    bodies,
+                    sim_dt_propose,
+                    current_g,
+                    ERROR_TOLERANCE,
+                    use_boundaries,
+                    world_bounds_sim,
                 )
-                time_step = next_dt_suggestion # Use suggestion for next frame's proposal
-                time_advanced_this_frame = time_advanced # Record how much time actually passed
+                time_step = next_dt_suggestion
+                time_advanced_this_frame = time_advanced
             else:
-                # Fixed step RK4
-                new_positions, new_velocities = perform_rk4_step(bodies, sim_dt_propose, current_g)
+                if current_integrator == "rk4":
+                    new_positions, new_velocities = perform_rk4_step(
+                        bodies, sim_dt_propose, current_g
+                    )
+                else:
+                    positions = np.array([b.pos for b in bodies])
+                    velocities = np.array([b.vel for b in bodies])
+                    masses = np.array([b.mass for b in bodies])
+                    fixed_mask = np.array([b.fixed for b in bodies])
+                    new_positions, new_velocities = symplectic_step_arrays(
+                        positions,
+                        velocities,
+                        masses,
+                        fixed_mask,
+                        sim_dt_propose,
+                        current_g,
+                    )
                 # Update bodies manually
                 for i, body in enumerate(bodies):
                     if not body.fixed:
@@ -608,7 +631,7 @@ def main(softening_length_override=None):
                         # Apply boundaries after update
                         if use_boundaries and world_bounds_sim is not None:
                             body.handle_boundary_collision(world_bounds_sim)
-                time_advanced_this_frame = sim_dt_propose # Fixed step always advances by proposed dt
+                time_advanced_this_frame = sim_dt_propose
 
             simulation_time += time_advanced_this_frame
 
@@ -688,9 +711,11 @@ def main(softening_length_override=None):
              current_ticks = pygame.time.get_ticks()
              if not hasattr(main, 'last_status_update') or current_ticks - main.last_status_update > 100: # Update every 100ms
                  main.last_status_update = current_ticks
-                 status_info = (f"Time: {time_to_display(simulation_time)} | "
-                               f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
-                               f"Zoom: {current_zoom/ZOOM_BASE:.1f}x")
+                status_info = (
+                    f"Time: {time_to_display(simulation_time)} | "
+                    f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
+                    f"Zoom: {current_zoom/ZOOM_BASE:.1f}x | Int: {current_integrator}"
+                )
                  # Add energy calculation if needed (can be slow)
                  # try:
                  #    ke, pe, te = calculate_system_energies(bodies, INITIAL_G * gravity_multiplier) # Use scaled G
@@ -741,6 +766,12 @@ if __name__ == "__main__":
         default=None,
         help="Softening length in metres (overrides preset value)",
     )
+    parser.add_argument(
+        "--integrator",
+        choices=["rk4", "symplectic"],
+        default="rk4",
+        help="Choose integration method",
+    )
     args = parser.parse_args()
 
     env_verbose = os.getenv("THREEBODY_VERBOSE", "0") == "1"
@@ -752,7 +783,10 @@ if __name__ == "__main__":
         print("\nExiting due to missing pygame_gui dependency.")
     else:
         try:
-            main(softening_length_override=args.softening_length)
+            main(
+                softening_length_override=args.softening_length,
+                integrator_choice=args.integrator,
+            )
         except Exception as e:
             print(f"\n--- Simulation Runtime Error ---")
             print(f"Error Type: {type(e).__name__}")

@@ -5,7 +5,7 @@ from threebody.integrators import compute_accelerations
 
 
 def _total_momentum(bodies):
-    p = np.zeros(2, dtype=float)
+    p = np.zeros(3, dtype=float)
     for b in bodies:
         if not getattr(b, "fixed", False):
             p += b.mass * b.vel

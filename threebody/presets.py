@@ -194,3 +194,7 @@ PRESETS = {
 
 # Optional softening length (in metres) per preset
 PRESET_SOFTENING_LENGTHS = {name: C.SOFTENING_LENGTH for name in PRESETS}
+
+# Default integrator per preset
+PRESET_INTEGRATORS = {name: "rk4" for name in PRESETS}
+PRESET_INTEGRATORS["Figure 8"] = "symplectic"

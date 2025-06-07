@@ -35,17 +35,18 @@ def compute_accelerations(
     if n == 0:
         return np.zeros((0, 3), dtype=np.float64)
 
-    dim = positions.shape[1]
-    if dim == 2:
-        positions = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
-        dim = 3
+    original_dim = positions.shape[1]
+    if original_dim == 2:
+        positions_3d = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
+    else:
+        positions_3d = positions
 
-    acc = np.zeros((n, dim), dtype=np.float64)
+    acc = np.zeros((n, 3), dtype=np.float64)
     for i in range(n):
         if fixed_mask[i]:
             continue
 
-        r_vec = positions - positions[i]
+        r_vec = positions_3d - positions_3d[i]
         dist_sq = np.einsum("ij,ij->i", r_vec, r_vec)
         dist_sq[i] = np.inf  # ignore self
 
@@ -59,6 +60,8 @@ def compute_accelerations(
 
         acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
 
+    if original_dim == 2:
+        return acc[:, :2]
     return acc
 
 
@@ -121,6 +124,54 @@ def rk4_step_bodies(bodies, dt: float, g_constant: float = C.G_REAL) -> None:
     fixed_mask = np.array([getattr(b, "fixed", False) for b in bodies])
 
     new_pos, new_vel = rk4_step_arrays(
+        positions, velocities, masses, fixed_mask, dt, g_constant
+    )
+
+    for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
+        if not fixed:
+            b.pos = p
+            b.vel = v
+
+
+def symplectic_step_arrays(
+    positions: np.ndarray,
+    velocities: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    dt: float,
+    g_constant: float = C.G_REAL,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Advance bodies using a velocity Verlet (symplectic) step."""
+
+    if positions.shape[1] == 2:
+        positions = np.hstack([positions, np.zeros((len(masses), 1), dtype=positions.dtype)])
+    if velocities.shape[1] == 2:
+        velocities = np.hstack([velocities, np.zeros((len(masses), 1), dtype=velocities.dtype)])
+
+    acc0 = compute_accelerations(positions, masses, fixed_mask, g_constant)
+
+    half_vel = velocities + 0.5 * dt * acc0
+    new_pos = positions + dt * half_vel / C.SPACE_SCALE
+
+    acc1 = compute_accelerations(new_pos, masses, fixed_mask, g_constant)
+    new_vel = half_vel + 0.5 * dt * acc1
+
+    for i in range(len(masses)):
+        if fixed_mask[i]:
+            new_pos[i] = positions[i]
+            new_vel[i] = velocities[i]
+
+    return new_pos, new_vel
+
+
+def symplectic_step_bodies(bodies, dt: float, g_constant: float = C.G_REAL) -> None:
+    """Integrate a list of body objects in place using velocity Verlet."""
+    positions = np.array([b.pos for b in bodies])
+    velocities = np.array([b.vel for b in bodies])
+    masses = np.array([b.mass for b in bodies])
+    fixed_mask = np.array([getattr(b, "fixed", False) for b in bodies])
+
+    new_pos, new_vel = symplectic_step_arrays(
         positions, velocities, masses, fixed_mask, dt, g_constant
     )
 
