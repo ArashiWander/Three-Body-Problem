@@ -2,7 +2,7 @@ import numpy as np
 import pygame
 import pygame.gfxdraw
 
-from . import constants as C
+from . import __version__, constants as C
 from .presets import PRESETS
 from .rendering import Body, render_gravitational_field
 from .physics_utils import (
@@ -38,7 +38,7 @@ class Simulation:
         if init_pygame:
             pygame.init()
             self.screen = pygame.display.set_mode((C.WIDTH, C.HEIGHT))
-            pygame.display.set_caption(f"N-Body Simulation v{C.VERSION}")
+            pygame.display.set_caption(f"N-Body Simulation v{__version__}")
             self.clock = pygame.time.Clock()
         else:
             self.screen = None

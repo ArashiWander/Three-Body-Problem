@@ -1,7 +1,8 @@
 """Physics helper functions for the simulation."""
 import numpy as np
 from . import constants as C
-from .rendering import Body
+from .physics import Body as PhysicsBody
+from .jit import apply_boundary_conditions_jit
 from .integrators import compute_accelerations, rk4_step_arrays
 
 
@@ -104,9 +105,7 @@ def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_bound
     pos_half, vel_half = perform_rk4_step(bodies, half_dt, g_constant)
     temp_body_objects = []
     for i, b in enumerate(bodies):
-        tb = Body(b.mass, 0, 0, 0, 0, b.color, b.radius_pixels, fixed=b.fixed)
-        tb.pos = pos_half[i]
-        tb.vel = vel_half[i]
+        tb = PhysicsBody(b.mass, pos_half[i], vel_half[i], fixed=b.fixed)
         temp_body_objects.append(tb)
     pos2, vel2 = perform_rk4_step(temp_body_objects, half_dt, g_constant)
     max_rel_error = 0.0
@@ -136,10 +135,22 @@ def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_bound
     dt_new = max(C.MIN_TIME_STEP, min(dt_new, C.MAX_TIME_STEP))
     if max_rel_error <= error_tolerance or dt <= C.MIN_TIME_STEP:
         for i, body in enumerate(bodies):
-            if not body.fixed:
+            if body.fixed:
+                continue
+            if hasattr(body, "update_physics_state"):
                 body.update_physics_state(pos2[i], vel2[i])
-                if use_boundaries and bounds_sim is not None:
+            else:
+                body.pos = pos2[i]
+                body.vel = vel2[i]
+            if use_boundaries and bounds_sim is not None:
+                if hasattr(body, "handle_boundary_collision"):
                     body.handle_boundary_collision(bounds_sim)
+                else:
+                    new_pos, new_vel = apply_boundary_conditions_jit(
+                        body.pos, body.vel, bounds_sim, 0.8
+                    )
+                    body.pos = new_pos
+                    body.vel = new_vel
         return dt, dt_new
     else:
         return 0.0, dt_new
