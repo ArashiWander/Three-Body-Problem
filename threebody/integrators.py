@@ -1,17 +1,15 @@
-
-
 from __future__ import annotations
 
 import numpy as np
 
-from .constants import G_REAL, SOFTENING_FACTOR_SQ, SPACE_SCALE
+from . import constants as C
 
 
 def compute_accelerations(
     positions: np.ndarray,
     masses: np.ndarray,
     fixed_mask: np.ndarray,
-    g_constant: float = G_REAL,
+    g_constant: float = C.G_REAL,
 ) -> np.ndarray:
     """Return accelerations for each body.
 
@@ -45,13 +43,13 @@ def compute_accelerations(
         dist_sq = np.einsum("ij,ij->i", r_vec, r_vec)
         dist_sq[i] = np.inf  # ignore self
 
-        dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
+        dist_sq_m = dist_sq * (C.SPACE_SCALE**2)
 
         inv_dist = np.zeros_like(dist_sq)
         mask = dist_sq > 0.0
         inv_dist[mask] = 1.0 / np.sqrt(dist_sq[mask])
 
-        factors = g_constant * masses / (dist_sq_m + SOFTENING_FACTOR_SQ)
+        factors = g_constant * masses / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
 
         acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
 
@@ -64,7 +62,7 @@ def rk4_step_arrays(
     masses: np.ndarray,
     fixed_mask: np.ndarray,
     dt: float,
-    g_constant: float = G_REAL,
+    g_constant: float = C.G_REAL,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Advance bodies using an RK4 step operating on arrays."""
 
@@ -73,25 +71,25 @@ def rk4_step_arrays(
 
     k1a = deriv(positions, velocities)
     k1v = dt * k1a
-    k1p = dt * velocities / SPACE_SCALE
+    k1p = dt * velocities / C.SPACE_SCALE
 
     pos_k2 = positions + 0.5 * k1p
     vel_k2 = velocities + 0.5 * k1v
     k2a = deriv(pos_k2, vel_k2)
     k2v = dt * k2a
-    k2p = dt * (velocities + 0.5 * k1v) / SPACE_SCALE
+    k2p = dt * (velocities + 0.5 * k1v) / C.SPACE_SCALE
 
     pos_k3 = positions + 0.5 * k2p
     vel_k3 = velocities + 0.5 * k2v
     k3a = deriv(pos_k3, vel_k3)
     k3v = dt * k3a
-    k3p = dt * (velocities + 0.5 * k2v) / SPACE_SCALE
+    k3p = dt * (velocities + 0.5 * k2v) / C.SPACE_SCALE
 
     pos_k4 = positions + k3p
     vel_k4 = velocities + k3v
     k4a = deriv(pos_k4, vel_k4)
     k4v = dt * k4a
-    k4p = dt * (velocities + k3v) / SPACE_SCALE
+    k4p = dt * (velocities + k3v) / C.SPACE_SCALE
 
     new_pos = positions.copy()
     new_vel = velocities.copy()
@@ -104,14 +102,16 @@ def rk4_step_arrays(
     return new_pos, new_vel
 
 
-def rk4_step_bodies(bodies, dt: float, g_constant: float = G_REAL) -> None:
+def rk4_step_bodies(bodies, dt: float, g_constant: float = C.G_REAL) -> None:
     """Integrate a list of body objects in place using RK4."""
     positions = np.array([b.pos for b in bodies])
     velocities = np.array([b.vel for b in bodies])
     masses = np.array([b.mass for b in bodies])
     fixed_mask = np.array([getattr(b, "fixed", False) for b in bodies])
 
-    new_pos, new_vel = rk4_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant)
+    new_pos, new_vel = rk4_step_arrays(
+        positions, velocities, masses, fixed_mask, dt, g_constant
+    )
 
     for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
         if not fixed:

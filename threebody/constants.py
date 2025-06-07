@@ -45,7 +45,9 @@ SPACE_SCALE = 5e9
 INITIAL_G = G_REAL
 TIME_STEP_BASE = 600
 SPEED_FACTOR = 1.0
-SOFTENING_FACTOR_SQ = 1.0 ** 2
+# Length scale used to soften gravitational interactions (in metres)
+SOFTENING_LENGTH = 1.0
+SOFTENING_FACTOR_SQ = SOFTENING_LENGTH**2
 VELOCITY_DRAG_SCALE = 10000.0
 
 ADAPTIVE_STEPPING = True
@@ -57,9 +59,9 @@ FIELD_RESOLUTION = 30
 SHOW_GRAV_FIELD = False
 SHOW_TRAILS = True
 ZOOM_BASE = 1.0 / (AU / 500)
-INITIAL_PAN_OFFSET = np.array([(WIDTH - UI_SIDEBAR_WIDTH)/2,
-                               (HEIGHT - UI_BOTTOM_HEIGHT)/2],
-                              dtype=np.float64)
+INITIAL_PAN_OFFSET = np.array(
+    [(WIDTH - UI_SIDEBAR_WIDTH) / 2, (HEIGHT - UI_BOTTOM_HEIGHT) / 2], dtype=np.float64
+)
 CAMERA_SMOOTHING = 0.05
 ZOOM_FACTOR = 1.2
 # Scale body size linearly with zoom for clearer close ups

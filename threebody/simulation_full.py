@@ -48,7 +48,7 @@ from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_
 
 
 # --- Main Simulation Function ---
-def main():
+def main(softening_length_override=None):
     """Main simulation loop."""
     # <<< Declare global flags modified within main's event loop >>>
     global SHOW_TRAILS, SHOW_GRAV_FIELD, ADAPTIVE_STEPPING, SPEED_FACTOR
@@ -237,6 +237,7 @@ def main():
         nonlocal target_zoom, target_pan, current_zoom, current_pan
         # <<< Use nonlocal for gravity_multiplier >>>
         nonlocal gravity_multiplier
+        nonlocal softening_length_override
 
 
         if preset_name not in PRESETS:
@@ -244,6 +245,11 @@ def main():
             return
 
         preset_data = PRESETS[preset_name]
+
+        preset_soft = PRESET_SOFTENING_LENGTHS.get(preset_name, C.SOFTENING_LENGTH)
+        new_soft = softening_length_override if softening_length_override is not None else preset_soft
+        C.SOFTENING_LENGTH = float(new_soft)
+        C.SOFTENING_FACTOR_SQ = C.SOFTENING_LENGTH ** 2
         bodies = []
         Body.ID_counter = 0 # Reset unique IDs
         for body_config in preset_data:
@@ -729,6 +735,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Enable verbose debug logging",
     )
+    parser.add_argument(
+        "--softening-length",
+        type=float,
+        default=None,
+        help="Softening length in metres (overrides preset value)",
+    )
     args = parser.parse_args()
 
     env_verbose = os.getenv("THREEBODY_VERBOSE", "0") == "1"
@@ -740,7 +752,7 @@ if __name__ == "__main__":
         print("\nExiting due to missing pygame_gui dependency.")
     else:
         try:
-            main()
+            main(softening_length_override=args.softening_length)
         except Exception as e:
             print(f"\n--- Simulation Runtime Error ---")
             print(f"Error Type: {type(e).__name__}")
