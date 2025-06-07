@@ -705,26 +705,12 @@ def main(softening_length_override=None):
 
         # --- Update Status Bar ---
         if not paused:
-            # Update status text less frequently for performance
-            current_ticks = pygame.time.get_ticks()
-            if (
-                not hasattr(main, "last_status_update")
-                or current_ticks - main.last_status_update > 100
-            ):  # Update every 100ms
-                main.last_status_update = current_ticks
                 status_info = (
                     f"Time: {time_to_display(simulation_time)} | "
                     f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
                     f"Zoom: {current_zoom/ZOOM_BASE:.1f}x | "
                     f"G: {gravity_multiplier:.1f}x"
                 )
-                # Add energy calculation if needed (can be slow)
-                # try:
-                #     ke, pe, te = calculate_system_energies(bodies, INITIAL_G * gravity_multiplier)  # Use scaled G
-                #     status_info += f" | E: {te:.2e} J"
-                # except Exception:
-                #     pass  # Ignore energy calc errors
-                status_text_label.set_text(status_info)
 
 
         # --- UI Update & Draw ---
