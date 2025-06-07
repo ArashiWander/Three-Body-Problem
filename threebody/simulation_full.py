@@ -34,6 +34,7 @@ except ImportError:
      exit()
 from .constants import *
 from . import constants as C
+from . import __version__
 from .utils import mass_to_display, distance_to_display, time_to_display
 from .presets import PRESETS
 from .rendering import Body, render_gravitational_field
@@ -58,7 +59,7 @@ def main():
         return # Exit if UI library failed to import
 
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption(f"N-Body Simulation v{VERSION}")
+    pygame.display.set_caption(f"N-Body Simulation v{__version__}")
     clock = pygame.time.Clock()
     # Load default UI theme or specify path to custom theme file
     ui_manager = pygame_gui.UIManager((WIDTH, HEIGHT)) #, 'path/to/theme.json')
