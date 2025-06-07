@@ -33,12 +33,14 @@ def compute_accelerations(
 
     n = len(masses)
     if n == 0:
-        return np.zeros((0, 3), dtype=np.float64)
+        return np.zeros((0, positions.shape[1]), dtype=np.float64)
 
     dim = positions.shape[1]
+    use_2d = False
     if dim == 2:
         positions = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
         dim = 3
+        use_2d = True
 
     acc = np.zeros((n, dim), dtype=np.float64)
     for i in range(n):
@@ -58,6 +60,9 @@ def compute_accelerations(
         factors = g_constant * masses / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
 
         acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
+
+    if use_2d:
+        acc = acc[:, :2]
 
     return acc
 

@@ -193,4 +193,22 @@ PRESETS = {
 }
 
 # Optional softening length (in metres) per preset
-PRESET_SOFTENING_LENGTHS = {name: C.SOFTENING_LENGTH for name in PRESETS}
+# ``None`` means use the global default or command-line override.
+PRESET_SOFTENING_LENGTHS = {name: None for name in PRESETS}
+# Example overrides for specific scenarios
+PRESET_SOFTENING_LENGTHS["Sun & Earth"] = 1e6
+PRESET_SOFTENING_LENGTHS["Figure 8"] = 5e5
+
+
+def get_preset_softening_length(preset_name: str, override: float | None = None) -> float:
+    """Return the softening length for a preset.
+
+    A value defined in :data:`PRESET_SOFTENING_LENGTHS` takes precedence over any
+    command-line override. If neither provides a value the global default from
+    :mod:`threebody.constants` is used.
+    """
+    if preset_name in PRESET_SOFTENING_LENGTHS and PRESET_SOFTENING_LENGTHS[preset_name] is not None:
+        return float(PRESET_SOFTENING_LENGTHS[preset_name])
+    if override is not None:
+        return float(override)
+    return float(C.SOFTENING_LENGTH)

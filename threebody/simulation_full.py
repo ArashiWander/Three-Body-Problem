@@ -39,7 +39,7 @@ from .constants import *
 from . import constants as C
 from . import __version__
 from .utils import mass_to_display, distance_to_display, time_to_display
-from .presets import PRESETS
+from .presets import PRESETS, get_preset_softening_length
 from .rendering import Body, render_gravitational_field
 from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_rk4_step, detect_and_handle_collisions, get_world_bounds_sim
 
@@ -246,8 +246,7 @@ def main(softening_length_override=None):
 
         preset_data = PRESETS[preset_name]
 
-        preset_soft = PRESET_SOFTENING_LENGTHS.get(preset_name, C.SOFTENING_LENGTH)
-        new_soft = softening_length_override if softening_length_override is not None else preset_soft
+        new_soft = get_preset_softening_length(preset_name, softening_length_override)
         C.SOFTENING_LENGTH = float(new_soft)
         C.SOFTENING_FACTOR_SQ = C.SOFTENING_LENGTH ** 2
         bodies = []

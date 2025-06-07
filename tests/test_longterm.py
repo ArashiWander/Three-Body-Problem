@@ -8,7 +8,7 @@ def _total_momentum(bodies):
     p = np.zeros(2, dtype=float)
     for b in bodies:
         if not getattr(b, "fixed", False):
-            p += b.mass * b.vel
+            p += b.mass * b.vel[:2]
     return p
 
 
