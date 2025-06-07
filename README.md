@@ -73,6 +73,10 @@ x_sim = real_distance_meters / SPACE_SCALE
 Using unscaled metre values will make gravity appear far too weak because the
 distances become millions of times larger than intended.
 
+Alternatively, call :py:meth:`Body.from_meters` to create a body using SI
+coordinates directly. The helper converts the position for you so the resulting
+objects interact as expected.
+
 ## Adjusting Body Trails
 
 Use `Body.set_trail_length(length)` to change how many trail points a body

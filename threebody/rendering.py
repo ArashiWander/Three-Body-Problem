@@ -40,6 +40,29 @@ class Body:
             f"vel={self.vel.tolist()}, fixed={self.fixed})"
         )
 
+    @staticmethod
+    def from_meters(mass, x_m, y_m, vx_m_s, vy_m_s, color, radius,
+                    max_trail_length=C.DEFAULT_TRAIL_LENGTH, fixed=False,
+                    name=None, show_trail=True):
+        """Create a body using metre based coordinates.
+
+        Parameters are identical to :class:`Body` except that ``x_m`` and
+        ``y_m`` are specified in real metres rather than simulation units.
+        """
+        return Body(
+            mass,
+            x_m / C.SPACE_SCALE,
+            y_m / C.SPACE_SCALE,
+            vx_m_s,
+            vy_m_s,
+            color,
+            radius,
+            max_trail_length=max_trail_length,
+            fixed=fixed,
+            name=name,
+            show_trail=show_trail,
+        )
+
     def update_physics_state(self, new_pos_sim, new_vel_m_s):
         if not self.fixed:
             self.pos = new_pos_sim
