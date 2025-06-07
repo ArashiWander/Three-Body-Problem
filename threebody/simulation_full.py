@@ -41,17 +41,25 @@ from . import __version__
 from .utils import mass_to_display, distance_to_display, time_to_display
 from .presets import PRESETS
 from .rendering import Body, render_gravitational_field
-from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_rk4_step, detect_and_handle_collisions, get_world_bounds_sim
+from .physics_utils import (
+    calculate_center_of_mass,
+    perform_rk4_step,
+    perform_symplectic_step,
+    adaptive_rk4_step,
+    detect_and_handle_collisions,
+    get_world_bounds_sim,
+)
 
 
 
 
 
 # --- Main Simulation Function ---
-def main():
+def main(integrator: str = "rk4"):
     """Main simulation loop."""
     # <<< Declare global flags modified within main's event loop >>>
     global SHOW_TRAILS, SHOW_GRAV_FIELD, ADAPTIVE_STEPPING, SPEED_FACTOR
+    integrator = integrator.lower()
 
     # --- Pygame and UI Initialization ---
     pygame.init()
@@ -593,8 +601,15 @@ def main():
                 time_step = next_dt_suggestion # Use suggestion for next frame's proposal
                 time_advanced_this_frame = time_advanced # Record how much time actually passed
             else:
-                # Fixed step RK4
-                new_positions, new_velocities = perform_rk4_step(bodies, sim_dt_propose, current_g)
+                # Fixed step integration
+                if integrator == "symplectic":
+                    new_positions, new_velocities = perform_symplectic_step(
+                        bodies, sim_dt_propose, current_g
+                    )
+                else:
+                    new_positions, new_velocities = perform_rk4_step(
+                        bodies, sim_dt_propose, current_g
+                    )
                 # Update bodies manually
                 for i, body in enumerate(bodies):
                     if not body.fixed:
@@ -729,6 +744,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Enable verbose debug logging",
     )
+    parser.add_argument(
+        "-i",
+        "--integrator",
+        choices=["rk4", "symplectic"],
+        default="rk4",
+        help="Integration method to use",
+    )
     args = parser.parse_args()
 
     env_verbose = os.getenv("THREEBODY_VERBOSE", "0") == "1"
@@ -740,7 +762,7 @@ if __name__ == "__main__":
         print("\nExiting due to missing pygame_gui dependency.")
     else:
         try:
-            main()
+            main(args.integrator)
         except Exception as e:
             print(f"\n--- Simulation Runtime Error ---")
             print(f"Error Type: {type(e).__name__}")

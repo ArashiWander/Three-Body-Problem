@@ -104,6 +104,37 @@ def rk4_step_arrays(
     return new_pos, new_vel
 
 
+def symplectic_step_arrays(
+    positions: np.ndarray,
+    velocities: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    dt: float,
+    g_constant: float = G_REAL,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Advance bodies using a Leapfrog (velocity Verlet) step."""
+
+    new_pos = positions.copy()
+    new_vel = velocities.copy()
+
+    acc = compute_accelerations(positions, masses, fixed_mask, g_constant)
+
+    for i in range(len(masses)):
+        if fixed_mask[i]:
+            continue
+        new_vel[i] += 0.5 * dt * acc[i]
+        new_pos[i] += dt * new_vel[i] / SPACE_SCALE
+
+    acc_new = compute_accelerations(new_pos, masses, fixed_mask, g_constant)
+
+    for i in range(len(masses)):
+        if fixed_mask[i]:
+            continue
+        new_vel[i] += 0.5 * dt * acc_new[i]
+
+    return new_pos, new_vel
+
+
 def rk4_step_bodies(bodies, dt: float, g_constant: float = G_REAL) -> None:
     """Integrate a list of body objects in place using RK4."""
     positions = np.array([b.pos for b in bodies])
@@ -112,6 +143,23 @@ def rk4_step_bodies(bodies, dt: float, g_constant: float = G_REAL) -> None:
     fixed_mask = np.array([getattr(b, "fixed", False) for b in bodies])
 
     new_pos, new_vel = rk4_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant)
+
+    for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
+        if not fixed:
+            b.pos = p
+            b.vel = v
+
+
+def symplectic_step_bodies(bodies, dt: float, g_constant: float = G_REAL) -> None:
+    """Integrate a list of body objects in place using Leapfrog."""
+    positions = np.array([b.pos for b in bodies])
+    velocities = np.array([b.vel for b in bodies])
+    masses = np.array([b.mass for b in bodies])
+    fixed_mask = np.array([getattr(b, "fixed", False) for b in bodies])
+
+    new_pos, new_vel = symplectic_step_arrays(
+        positions, velocities, masses, fixed_mask, dt, g_constant
+    )
 
     for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
         if not fixed:

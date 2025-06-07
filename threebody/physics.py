@@ -7,7 +7,11 @@ more feature rich :class:`~threebody.rendering.Body` instead.
 import numpy as np
 
 from .constants import G_REAL, SPACE_SCALE
-from .integrators import compute_accelerations, rk4_step_arrays
+from .integrators import (
+    compute_accelerations,
+    rk4_step_arrays,
+    symplectic_step_arrays,
+)
 
 
 class Body:
@@ -55,6 +59,26 @@ def perform_rk4_step(bodies, dt, g_constant=G_REAL):
     fixed_mask = np.array([b.fixed for b in bodies], dtype=bool)
 
     new_pos, new_vel = rk4_step_arrays(
+        positions, velocities, masses, fixed_mask, dt, g_constant
+    )
+
+    for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
+        if not fixed:
+            b.pos = p
+            b.vel = v
+
+
+def perform_symplectic_step(bodies, dt, g_constant=G_REAL):
+    """Advance bodies using a Leapfrog integrator."""
+    if not bodies:
+        return
+
+    positions = np.array([b.pos for b in bodies], dtype=float)
+    velocities = np.array([b.vel for b in bodies], dtype=float)
+    masses = np.array([b.mass for b in bodies], dtype=float)
+    fixed_mask = np.array([b.fixed for b in bodies], dtype=bool)
+
+    new_pos, new_vel = symplectic_step_arrays(
         positions, velocities, masses, fixed_mask, dt, g_constant
     )
 

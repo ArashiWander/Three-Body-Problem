@@ -3,7 +3,7 @@ import numpy as np
 from . import constants as C
 from .physics import Body as PhysicsBody
 from .jit import apply_boundary_conditions_jit
-from .integrators import compute_accelerations, rk4_step_arrays
+from .integrators import compute_accelerations, rk4_step_arrays, symplectic_step_arrays
 
 
 def calculate_system_energies(bodies, g_constant):
@@ -83,6 +83,19 @@ def perform_rk4_step(bodies, dt, g_constant):
     fixed_mask = np.array([b.fixed for b in bodies])
 
     return rk4_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant)
+
+
+def perform_symplectic_step(bodies, dt, g_constant):
+    """Advance bodies using a Leapfrog integrator."""
+    if not bodies:
+        return np.array([]), np.array([])
+
+    positions = np.array([b.pos for b in bodies])
+    velocities = np.array([b.vel for b in bodies])
+    masses = np.array([b.mass for b in bodies])
+    fixed_mask = np.array([b.fixed for b in bodies])
+
+    return symplectic_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant)
 
 
 def calculate_accelerations_from_temp(temp_bodies_list, g_constant):
