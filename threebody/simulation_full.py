@@ -416,8 +416,8 @@ def main(softening_length_override=None):
 
             # --- Handle Mouse & Keyboard Input (if not over UI panel for relevant events) ---
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                 # Check if click is outside UI panels
-                 if not mouse_over_ui:
+                # Check if click is outside UI panels
+                if not mouse_over_ui:
                     if event.button == 1:  # Left click
                         # Check if clicking on a body
                         clicked_on_body = None
@@ -444,8 +444,8 @@ def main(softening_length_override=None):
                                 current_log_mass = math.log10(max(1e-9, selected_body.mass))
                                 slider_val = 0.5 # Default
                                 if (mass_max_log > mass_min_log):
-                                     slider_val = (current_log_mass - mass_min_log) / (mass_max_log - mass_min_log)
-                                     slider_val = max(0.0, min(1.0, slider_val)) # Clamp
+                                    slider_val = (current_log_mass - mass_min_log) / (mass_max_log - mass_min_log)
+                                    slider_val = max(0.0, min(1.0, slider_val)) # Clamp
                                 selected_mass_slider.set_current_value(slider_val)
                                 selected_mass_slider.enable()
                                 trail_length_slider.set_current_value(selected_body.max_trail_length)
@@ -472,45 +472,45 @@ def main(softening_length_override=None):
                             add_body_start_screen = mouse_screen_pos.copy()
                             adding_body_state = 1
                             status_text_label.set_text("Drag to set velocity...")
-                 # Handle mouse wheel zoom regardless of UI hover? Or check event consumption?
-                 # Let's allow zoom even if hovering UI for now.
-                 if event.button == 4:  # Mouse wheel up - Zoom in
-                     if mouse_world_pos is not None: # Need a world pos to zoom towards
-                         target_zoom *= ZOOM_FACTOR
-                         # Adjust pan to keep mouse pointer location static in world space
-                         target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
+                # Handle mouse wheel zoom regardless of UI hover? Or check event consumption?
+                # Let's allow zoom even if hovering UI for now.
+                if event.button == 4:  # Mouse wheel up - Zoom in
+                    if mouse_world_pos is not None: # Need a world pos to zoom towards
+                        target_zoom *= ZOOM_FACTOR
+                        # Adjust pan to keep mouse pointer location static in world space
+                        target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
 
-                 elif event.button == 5:  # Mouse wheel down - Zoom out
-                      if mouse_world_pos is not None: # Need a world pos to zoom towards
-                         target_zoom /= ZOOM_FACTOR
-                         target_zoom = max(1e-18, target_zoom) # Prevent zoom <= 0
-                         target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
+                elif event.button == 5:  # Mouse wheel down - Zoom out
+                    if mouse_world_pos is not None: # Need a world pos to zoom towards
+                        target_zoom /= ZOOM_FACTOR
+                        target_zoom = max(1e-18, target_zoom) # Prevent zoom <= 0
+                        target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                 # Handle mouse up regardless of UI hover for releasing drags/adds
-                 if event.button == 1:  # Left click release
-                     # Only clear status if we were dragging a body
-                     if dragging_body: status_text_label.set_text(f"Released {selected_body.name if selected_body else ''}")
-                     # Keep body selected, but stop dragging motion
-                     dragging_body = False
-                     dragging_camera = False # Stop panning too
-                 elif event.button == 3: # Right click release - Finish adding body
-                     # Check if we were in the adding state
-                     if adding_body_state == 1:
-                         # Check if mouse is currently over UI - if so, cancel add
-                         if mouse_over_ui:
-                              print("Add body cancelled - mouse released over UI.")
-                         elif mouse_world_pos is not None: # Ensure mouse is still valid
-                             # Start position in world coords
-                             add_start_world = (add_body_start_screen - current_pan) / (current_zoom + 1e-18)
-                             # End position (current mouse) in world coords
-                             add_end_world = mouse_world_pos
+                # Handle mouse up regardless of UI hover for releasing drags/adds
+                if event.button == 1:  # Left click release
+                    # Only clear status if we were dragging a body
+                    if dragging_body: status_text_label.set_text(f"Released {selected_body.name if selected_body else ''}")
+                    # Keep body selected, but stop dragging motion
+                    dragging_body = False
+                    dragging_camera = False # Stop panning too
+                elif event.button == 3: # Right click release - Finish adding body
+                    # Check if we were in the adding state
+                    if adding_body_state == 1:
+                        # Check if mouse is currently over UI - if so, cancel add
+                        if mouse_over_ui:
+                            print("Add body cancelled - mouse released over UI.")
+                        elif mouse_world_pos is not None: # Ensure mouse is still valid
+                            # Start position in world coords
+                            add_start_world = (add_body_start_screen - current_pan) / (current_zoom + 1e-18)
+                            # End position (current mouse) in world coords
+                            add_end_world = mouse_world_pos
 
-                             # Calculate velocity from drag vector (world units -> m/s)
-                             drag_vector_world = add_end_world - add_start_world # Sim units
-                             vel_m_s = drag_vector_world * VELOCITY_DRAG_SCALE
+                            # Calculate velocity from drag vector (world units -> m/s)
+                            drag_vector_world = add_end_world - add_start_world # Sim units
+                            vel_m_s = drag_vector_world * VELOCITY_DRAG_SCALE
 
-                             # Create new body
+                            # Create new body
                             new_body = Body(
                                 mass=next_body_mass,
                                 pos=[add_start_world[0], add_start_world[1], 0.0],
@@ -520,24 +520,24 @@ def main(softening_length_override=None):
                                 name=f"Body_{Body.ID_counter}",
                                 show_trail=SHOW_TRAILS,
                             )
-                             bodies.append(new_body)
-                             status_text_label.set_text(f"Added {new_body.name}")
-                             color_index = (color_index + 1) % len(color_options)
-                         adding_body_state = 0 # Reset state regardless
+                            bodies.append(new_body)
+                            status_text_label.set_text(f"Added {new_body.name}")
+                            color_index = (color_index + 1) % len(color_options)
+                        adding_body_state = 0 # Reset state regardless
 
             elif event.type == pygame.MOUSEMOTION:
-                 # Handle motion only if not over UI? Or allow dragging over UI?
-                 # Let's allow dragging over UI for now, but panning stops if mouse enters UI.
-                 if dragging_body and selected_body: # Dragging selected body
-                     new_body_center_screen = mouse_screen_pos - mouse_offset
-                     selected_body.pos = (new_body_center_screen - current_pan) / (current_zoom + 1e-18)
-                     if paused: selected_body.vel = np.zeros(2) # Reset velocity if paused
-                     selected_body.clear_trail() # Avoid trail jumps while dragging
+                # Handle motion only if not over UI? Or allow dragging over UI?
+                # Let's allow dragging over UI for now, but panning stops if mouse enters UI.
+                if dragging_body and selected_body: # Dragging selected body
+                    new_body_center_screen = mouse_screen_pos - mouse_offset
+                    selected_body.pos = (new_body_center_screen - current_pan) / (current_zoom + 1e-18)
+                    if paused: selected_body.vel = np.zeros(2) # Reset velocity if paused
+                    selected_body.clear_trail() # Avoid trail jumps while dragging
 
-                 elif dragging_camera and not mouse_over_ui: # Panning camera only if mouse outside UI
-                     drag_delta_screen = mouse_screen_pos - camera_drag_start_screen
-                     # Target pan is the pan at drag start + the screen delta
-                     target_pan = camera_drag_start_pan + drag_delta_screen
+                elif dragging_camera and not mouse_over_ui: # Panning camera only if mouse outside UI
+                    drag_delta_screen = mouse_screen_pos - camera_drag_start_screen
+                    # Target pan is the pan at drag start + the screen delta
+                    target_pan = camera_drag_start_pan + drag_delta_screen
 
             elif event.type == pygame.KEYDOWN:
                  # Keyboard shortcuts usually don't need UI hover check
@@ -773,4 +773,3 @@ if __name__ == "__main__":
             print("\n--------------------\n")
             pygame.quit()
             input("Press Enter to exit...")
-
