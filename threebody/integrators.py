@@ -69,6 +69,8 @@ def _compute_accelerations_cpu(
     fixed_mask: np.ndarray,
     g_constant: float,
 ) -> np.ndarray:
+    """Compute accelerations on the CPU using symmetric pair updates."""
+
     n = len(masses)
     if n == 0:
         return np.zeros((0, positions.shape[1]), dtype=np.float64)
@@ -84,23 +86,23 @@ def _compute_accelerations_cpu(
         dim = orig_dim
 
     acc = np.zeros((n, dim), dtype=np.float64)
-    for i in range(n):
-        if fixed_mask[i]:
-            continue
+    scale_sq = C.SPACE_SCALE ** 2
 
-        r_vec = positions - positions[i]
-        dist_sq = np.einsum("ij,ij->i", r_vec, r_vec)
-        dist_sq[i] = np.inf  # ignore self
+    for i in range(n - 1):
+        for j in range(i + 1, n):
+            r_vec = positions[j] - positions[i]
+            dist_sq = float(np.dot(r_vec, r_vec))
+            if dist_sq == 0.0:
+                continue
+            dist_sq_m = dist_sq * scale_sq
+            inv_dist = 1.0 / np.sqrt(dist_sq)
+            factor = g_constant / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
+            acc_vec = r_vec * (inv_dist * factor)
 
-        dist_sq_m = dist_sq * (C.SPACE_SCALE**2)
-
-        inv_dist = np.zeros_like(dist_sq)
-        mask = dist_sq > 0.0
-        inv_dist[mask] = 1.0 / np.sqrt(dist_sq[mask])
-
-        factors = g_constant * masses / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
-
-        acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
+            if not fixed_mask[i]:
+                acc[i] += acc_vec * masses[j]
+            if not fixed_mask[j]:
+                acc[j] -= acc_vec * masses[i]
 
     return acc[:, :orig_dim]
 
