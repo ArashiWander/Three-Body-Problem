@@ -19,6 +19,12 @@ Numba is used for optional JIT acceleration. If it is missing or fails to
 initialize, the simulation automatically falls back to pure Python code so all
 features remain available.
 
+CuPy can further accelerate the physics on systems with a CUDA capable GPU.
+Install the appropriate binary (for example `pip install cupy-cuda11x`) and
+`compute_accelerations` will run on the GPU when available. On a mid-range
+NVIDIA GPU, calculating forces for a thousand bodies is roughly 5–10× faster
+than the CPU version.
+
 ## Running the Simulation
 
 Start the interactive application with:

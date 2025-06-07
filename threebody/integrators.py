@@ -6,31 +6,21 @@ import numpy as np
 
 from .constants import G_REAL, SOFTENING_FACTOR_SQ, SPACE_SCALE
 
+try:  # pragma: no cover - CuPy optional
+    import cupy as cp
+    CUPY_AVAILABLE = bool(cp.cuda.runtime.getDeviceCount())
+except Exception:  # pragma: no cover - CuPy unavailable
+    cp = None  # type: ignore
+    CUPY_AVAILABLE = False
 
-def compute_accelerations(
+
+def _compute_accelerations_cpu(
     positions: np.ndarray,
     masses: np.ndarray,
     fixed_mask: np.ndarray,
     g_constant: float = G_REAL,
 ) -> np.ndarray:
-    """Return accelerations for each body.
-
-    Parameters
-    ----------
-    positions : (N, 2) array
-        Current positions in simulation units.
-    masses : (N,) array
-        Body masses.
-    fixed_mask : (N,) boolean array
-        True for bodies that should not move.
-    g_constant : float, optional
-        Gravitational constant to use.
-
-    Returns
-    -------
-    (N, 2) ndarray
-        Accelerations in metres per second squared.
-    """
+    """Return accelerations for each body using NumPy."""
 
     n = len(masses)
     if n == 0:
@@ -56,6 +46,59 @@ def compute_accelerations(
         acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
 
     return acc
+
+
+def _compute_accelerations_gpu(
+    positions: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    g_constant: float = G_REAL,
+) -> np.ndarray:
+    """GPU accelerated version using CuPy."""
+
+    pos_gpu = cp.asarray(positions, dtype=cp.float64)
+    masses_gpu = cp.asarray(masses, dtype=cp.float64)
+    fixed_gpu = cp.asarray(fixed_mask)
+
+    n = len(masses_gpu)
+    if n == 0:
+        return np.zeros((0, 2), dtype=np.float64)
+
+    r_vec = pos_gpu[None, :, :] - pos_gpu[:, None, :]
+    dist_sq = cp.sum(r_vec * r_vec, axis=2)
+    cp.fill_diagonal(dist_sq, cp.inf)
+
+    dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
+
+    inv_dist = cp.where(dist_sq > 0.0, 1.0 / cp.sqrt(dist_sq), 0.0)
+
+    factors = g_constant * masses_gpu[None, :] / (dist_sq_m + SOFTENING_FACTOR_SQ)
+
+    acc = cp.sum(r_vec * (inv_dist[:, :, None] * factors[:, :, None]), axis=1)
+    acc[fixed_gpu] = 0.0
+
+    return cp.asnumpy(acc)
+
+
+def compute_accelerations(
+    positions: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    g_constant: float = G_REAL,
+) -> np.ndarray:
+    """Return accelerations for each body.
+
+    Uses a GPU via CuPy when available, otherwise falls back to the
+    NumPy implementation.
+    """
+
+    if CUPY_AVAILABLE:
+        try:  # pragma: no cover - depends on hardware
+            return _compute_accelerations_gpu(positions, masses, fixed_mask, g_constant)
+        except Exception:
+            pass
+
+    return _compute_accelerations_cpu(positions, masses, fixed_mask, g_constant)
 
 
 def rk4_step_arrays(
