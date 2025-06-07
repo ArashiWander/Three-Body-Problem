@@ -2,7 +2,14 @@ import numpy as np
 import pygame
 import pygame.gfxdraw
 
-from . import __version__, constants as C
+from importlib.metadata import version, PackageNotFoundError
+
+from . import constants as C
+
+try:
+    _PACKAGE_VERSION = version("threebody")
+except PackageNotFoundError:
+    _PACKAGE_VERSION = "0.0.0"
 from .presets import PRESETS
 from .rendering import Body, render_gravitational_field
 from .physics_utils import (
