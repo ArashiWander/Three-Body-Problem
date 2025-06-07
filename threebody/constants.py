@@ -2,7 +2,6 @@
 import numpy as np
 
 # Application
-VERSION = "2.0.17"
 WIDTH, HEIGHT = 1280, 800
 UI_SIDEBAR_WIDTH = 300
 UI_BOTTOM_HEIGHT = 30
