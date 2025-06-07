@@ -28,7 +28,7 @@ def calculate_system_energies(bodies, g_constant):
 
 
 def calculate_system_momentum(bodies):
-    total_momentum = np.zeros(2, dtype=np.float64)
+    total_momentum = np.zeros(3, dtype=np.float64)
     for body in bodies:
         if body.fixed:
             continue
@@ -38,8 +38,8 @@ def calculate_system_momentum(bodies):
 
 def calculate_center_of_mass(bodies):
     total_mass = 0.0
-    weighted_pos_sum = np.zeros(2, dtype=np.float64)
-    weighted_vel_sum = np.zeros(2, dtype=np.float64)
+    weighted_pos_sum = np.zeros(3, dtype=np.float64)
+    weighted_vel_sum = np.zeros(3, dtype=np.float64)
     has_mass = False
     for body in bodies:
         if not body.fixed and body.mass > 0:
@@ -53,8 +53,8 @@ def calculate_center_of_mass(bodies):
             if len(fixed_bodies) > 0:
                 com_pos_sim = sum(b.pos for b in fixed_bodies) / len(fixed_bodies)
             else:
-                com_pos_sim = np.array([0.0, 0.0])
-            com_vel_m_s = np.zeros(2)
+                com_pos_sim = np.array([0.0, 0.0, 0.0])
+            com_vel_m_s = np.zeros(3)
             return com_pos_sim, com_vel_m_s
         return None, None
     com_pos_sim = weighted_pos_sum / total_mass
@@ -64,7 +64,7 @@ def calculate_center_of_mass(bodies):
 
 def calculate_accelerations_for_all(bodies, g_constant):
     if not bodies:
-        return np.zeros((0, 2), dtype=np.float64)
+        return np.zeros((0, 3), dtype=np.float64)
 
     positions = np.array([b.pos for b in bodies])
     masses = np.array([b.mass for b in bodies])
@@ -87,7 +87,7 @@ def perform_rk4_step(bodies, dt, g_constant):
 
 def calculate_accelerations_from_temp(temp_bodies_list, g_constant):
     if not temp_bodies_list:
-        return np.zeros((0, 2), dtype=np.float64)
+        return np.zeros((0, 3), dtype=np.float64)
 
     positions = np.array([tb['pos'] for tb in temp_bodies_list])
     masses = np.array([tb['mass'] for tb in temp_bodies_list])
@@ -147,10 +147,10 @@ def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_bound
                     body.handle_boundary_collision(bounds_sim)
                 else:
                     new_pos, new_vel = apply_boundary_conditions_jit(
-                        body.pos, body.vel, bounds_sim, 0.8
+                        body.pos[:2], body.vel[:2], bounds_sim, 0.8
                     )
-                    body.pos = new_pos
-                    body.vel = new_vel
+                    body.pos[:2] = new_pos
+                    body.vel[:2] = new_vel
         return dt, dt_new
     else:
         return 0.0, dt_new

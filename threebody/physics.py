@@ -12,10 +12,33 @@ from .integrators import compute_accelerations, rk4_step_arrays
 
 class Body:
     """Simple body representation for physics computations."""
-    def __init__(self, mass, pos, vel, fixed=False):
+
+    def __init__(self, mass, pos, vel, fixed: bool = False):
+        """Create a body.
+
+        Parameters
+        ----------
+        mass : float
+            Mass of the body in kilograms.
+        pos : array-like
+            Initial position. 2-D values are padded with ``z=0``.
+        vel : array-like
+            Initial velocity. 2-D values are padded with ``z=0``.
+        fixed : bool, optional
+            If True the body does not move when integrated.
+        """
+
         self.mass = float(mass)
-        self.pos = np.asarray(pos, dtype=float)
-        self.vel = np.asarray(vel, dtype=float)
+        p = np.asarray(pos, dtype=float)
+        if p.size == 2:
+            p = np.append(p, 0.0)
+        self.pos = p.astype(float)
+
+        v = np.asarray(vel, dtype=float)
+        if v.size == 2:
+            v = np.append(v, 0.0)
+        self.vel = v.astype(float)
+
         self.fixed = fixed
 
     def __repr__(self):

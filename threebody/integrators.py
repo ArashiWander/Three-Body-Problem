@@ -17,8 +17,9 @@ def compute_accelerations(
 
     Parameters
     ----------
-    positions : (N, 2) array
-        Current positions in simulation units.
+    positions : (N, 3) array
+        Current positions in simulation units. 2-D arrays are also accepted and
+        treated as lying in the ``z=0`` plane.
     masses : (N,) array
         Body masses.
     fixed_mask : (N,) boolean array
@@ -28,15 +29,20 @@ def compute_accelerations(
 
     Returns
     -------
-    (N, 2) ndarray
+    (N, 3) ndarray
         Accelerations in metres per second squared.
     """
 
     n = len(masses)
     if n == 0:
-        return np.zeros((0, 2), dtype=np.float64)
+        return np.zeros((0, 3), dtype=np.float64)
 
-    acc = np.zeros((n, 2), dtype=np.float64)
+    dim = positions.shape[1]
+    if dim == 2:
+        positions = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
+        dim = 3
+
+    acc = np.zeros((n, dim), dtype=np.float64)
     for i in range(n):
         if fixed_mask[i]:
             continue
@@ -70,6 +76,11 @@ def rk4_step_arrays(
 
     def deriv(pos: np.ndarray, vel: np.ndarray) -> np.ndarray:
         return compute_accelerations(pos, masses, fixed_mask, g_constant)
+
+    if positions.shape[1] == 2:
+        positions = np.hstack([positions, np.zeros((len(masses), 1), dtype=positions.dtype)])
+    if velocities.shape[1] == 2:
+        velocities = np.hstack([velocities, np.zeros((len(masses), 1), dtype=velocities.dtype)])
 
     k1a = deriv(positions, velocities)
     k1v = dt * k1a
