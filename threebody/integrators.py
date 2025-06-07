@@ -5,6 +5,37 @@ from __future__ import annotations
 import numpy as np
 
 from .constants import G_REAL, SOFTENING_FACTOR_SQ, SPACE_SCALE
+from .jit import nb, NUMBA_AVAILABLE
+
+
+@nb.njit
+def _compute_accelerations_nb(
+    positions: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    g_constant: float,
+    softening_sq: float,
+    space_scale: float,
+) -> np.ndarray:
+    n = len(masses)
+    acc = np.zeros((n, 2), dtype=np.float64)
+    for i in range(n):
+        if fixed_mask[i]:
+            continue
+        for j in range(n):
+            if i == j:
+                continue
+            dx = positions[j, 0] - positions[i, 0]
+            dy = positions[j, 1] - positions[i, 1]
+            dist_sq = dx * dx + dy * dy
+            if dist_sq == 0.0:
+                continue
+            dist_sq_m = dist_sq * (space_scale ** 2)
+            inv_dist = 1.0 / np.sqrt(dist_sq)
+            factor = g_constant * masses[j] / (dist_sq_m + softening_sq)
+            acc[i, 0] += dx * inv_dist * factor
+            acc[i, 1] += dy * inv_dist * factor
+    return acc
 
 
 def compute_accelerations(
@@ -36,25 +67,28 @@ def compute_accelerations(
     if n == 0:
         return np.zeros((0, 2), dtype=np.float64)
 
-    acc = np.zeros((n, 2), dtype=np.float64)
-    for i in range(n):
-        if fixed_mask[i]:
-            continue
+    if NUMBA_AVAILABLE:
+        return _compute_accelerations_nb(
+            positions,
+            masses,
+            fixed_mask,
+            g_constant,
+            SOFTENING_FACTOR_SQ,
+            SPACE_SCALE,
+        )
 
-        r_vec = positions - positions[i]
-        dist_sq = np.einsum("ij,ij->i", r_vec, r_vec)
-        dist_sq[i] = np.inf  # ignore self
+    r_vec = positions[None, :, :] - positions[:, None, :]
+    dist_sq = np.einsum("ijk,ijk->ij", r_vec, r_vec)
+    np.fill_diagonal(dist_sq, np.inf)
+    dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
 
-        dist_sq_m = dist_sq * (SPACE_SCALE ** 2)
+    inv_dist = np.zeros_like(dist_sq)
+    mask = dist_sq > 0.0
+    inv_dist[mask] = 1.0 / np.sqrt(dist_sq[mask])
 
-        inv_dist = np.zeros_like(dist_sq)
-        mask = dist_sq > 0.0
-        inv_dist[mask] = 1.0 / np.sqrt(dist_sq[mask])
-
-        factors = g_constant * masses / (dist_sq_m + SOFTENING_FACTOR_SQ)
-
-        acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
-
+    factors = g_constant * masses[None, :] / (dist_sq_m + SOFTENING_FACTOR_SQ)
+    acc = np.sum(r_vec * inv_dist[:, :, None] * factors[:, :, None], axis=1)
+    acc[fixed_mask] = 0.0
     return acc
 
 
