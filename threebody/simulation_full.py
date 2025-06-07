@@ -95,10 +95,21 @@ def main(softening_length_override=None):
     speed_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), start_value=SPEED_FACTOR, value_range=(0.05, 5.0), manager=ui_manager, container=control_panel)
     y_pos += 30
     # Gravity Multiplier Slider
-    gravity_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), text="Gravity: 10.0x", manager=ui_manager, container=control_panel) # Start label at 10.0x
+    gravity_label = pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+        text="Gravity: 1.0x",
+        manager=ui_manager,
+        container=control_panel,
+    )
     y_pos += 20
     # Range increased to 100x
-    gravity_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), start_value=10.0, value_range=(0.0, 100.0), manager=ui_manager, container=control_panel)
+    gravity_slider = pygame_gui.elements.UIHorizontalSlider(
+        relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+        start_value=1.0,
+        value_range=(0.1, 100.0),
+        manager=ui_manager,
+        container=control_panel,
+    )
     y_pos += 30
     adaptive_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 30)), text=f"Adaptive Step: {'ON' if ADAPTIVE_STEPPING else 'OFF'}", manager=ui_manager, container=control_panel)
     y_pos += 40
@@ -224,8 +235,8 @@ def main(softening_length_override=None):
     color_index = 0
     adding_body_state = 0 # 0: idle, 1: dragging to set velocity
     add_body_start_screen = np.zeros(2) # Screen position where right-click started
-    # <<< Gravity multiplier state - Default set to 10.0 >>>
-    gravity_multiplier = 10.0
+    # <<< Gravity multiplier state - Default set to 1.0 >>>
+    gravity_multiplier = 1.0
     # --- End Simulation State Variables ---
 
 
@@ -288,7 +299,7 @@ def main(softening_length_override=None):
         trail_length_label.set_text(f"Trail: {DEFAULT_TRAIL_LENGTH}")
         trail_length_slider.disable()
         # <<< Reset gravity multiplier and slider on preset load to new default >>>
-        gravity_multiplier = 10.0
+        gravity_multiplier = 1.0
         gravity_slider.set_current_value(gravity_multiplier)
         gravity_label.set_text(f"Gravity: {gravity_multiplier:.2f}x")
         # <<< End Reset >>>
@@ -416,8 +427,8 @@ def main(softening_length_override=None):
 
             # --- Handle Mouse & Keyboard Input (if not over UI panel for relevant events) ---
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                 # Check if click is outside UI panels
-                 if not mouse_over_ui:
+                # Check if click is outside UI panels
+                if not mouse_over_ui:
                     if event.button == 1:  # Left click
                         # Check if clicking on a body
                         clicked_on_body = None
@@ -444,8 +455,8 @@ def main(softening_length_override=None):
                                 current_log_mass = math.log10(max(1e-9, selected_body.mass))
                                 slider_val = 0.5 # Default
                                 if (mass_max_log > mass_min_log):
-                                     slider_val = (current_log_mass - mass_min_log) / (mass_max_log - mass_min_log)
-                                     slider_val = max(0.0, min(1.0, slider_val)) # Clamp
+                                    slider_val = (current_log_mass - mass_min_log) / (mass_max_log - mass_min_log)
+                                    slider_val = max(0.0, min(1.0, slider_val)) # Clamp
                                 selected_mass_slider.set_current_value(slider_val)
                                 selected_mass_slider.enable()
                                 trail_length_slider.set_current_value(selected_body.max_trail_length)
@@ -472,45 +483,45 @@ def main(softening_length_override=None):
                             add_body_start_screen = mouse_screen_pos.copy()
                             adding_body_state = 1
                             status_text_label.set_text("Drag to set velocity...")
-                 # Handle mouse wheel zoom regardless of UI hover? Or check event consumption?
-                 # Let's allow zoom even if hovering UI for now.
-                 if event.button == 4:  # Mouse wheel up - Zoom in
-                     if mouse_world_pos is not None: # Need a world pos to zoom towards
-                         target_zoom *= ZOOM_FACTOR
-                         # Adjust pan to keep mouse pointer location static in world space
-                         target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
+                # Handle mouse wheel zoom regardless of UI hover? Or check event consumption?
+                # Let's allow zoom even if hovering UI for now.
+                if event.button == 4:  # Mouse wheel up - Zoom in
+                    if mouse_world_pos is not None: # Need a world pos to zoom towards
+                        target_zoom *= ZOOM_FACTOR
+                        # Adjust pan to keep mouse pointer location static in world space
+                        target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
 
-                 elif event.button == 5:  # Mouse wheel down - Zoom out
-                      if mouse_world_pos is not None: # Need a world pos to zoom towards
-                         target_zoom /= ZOOM_FACTOR
-                         target_zoom = max(1e-18, target_zoom) # Prevent zoom <= 0
-                         target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
+                elif event.button == 5:  # Mouse wheel down - Zoom out
+                    if mouse_world_pos is not None: # Need a world pos to zoom towards
+                        target_zoom /= ZOOM_FACTOR
+                        target_zoom = max(1e-18, target_zoom) # Prevent zoom <= 0
+                        target_pan = mouse_screen_pos - mouse_world_pos * target_zoom
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                 # Handle mouse up regardless of UI hover for releasing drags/adds
-                 if event.button == 1:  # Left click release
-                     # Only clear status if we were dragging a body
-                     if dragging_body: status_text_label.set_text(f"Released {selected_body.name if selected_body else ''}")
-                     # Keep body selected, but stop dragging motion
-                     dragging_body = False
-                     dragging_camera = False # Stop panning too
-                 elif event.button == 3: # Right click release - Finish adding body
-                     # Check if we were in the adding state
-                     if adding_body_state == 1:
-                         # Check if mouse is currently over UI - if so, cancel add
-                         if mouse_over_ui:
-                              print("Add body cancelled - mouse released over UI.")
-                         elif mouse_world_pos is not None: # Ensure mouse is still valid
-                             # Start position in world coords
-                             add_start_world = (add_body_start_screen - current_pan) / (current_zoom + 1e-18)
-                             # End position (current mouse) in world coords
-                             add_end_world = mouse_world_pos
+                # Handle mouse up regardless of UI hover for releasing drags/adds
+                if event.button == 1:  # Left click release
+                    # Only clear status if we were dragging a body
+                    if dragging_body: status_text_label.set_text(f"Released {selected_body.name if selected_body else ''}")
+                    # Keep body selected, but stop dragging motion
+                    dragging_body = False
+                    dragging_camera = False # Stop panning too
+                elif event.button == 3: # Right click release - Finish adding body
+                    # Check if we were in the adding state
+                    if adding_body_state == 1:
+                        # Check if mouse is currently over UI - if so, cancel add
+                        if mouse_over_ui:
+                            print("Add body cancelled - mouse released over UI.")
+                        elif mouse_world_pos is not None: # Ensure mouse is still valid
+                            # Start position in world coords
+                            add_start_world = (add_body_start_screen - current_pan) / (current_zoom + 1e-18)
+                            # End position (current mouse) in world coords
+                            add_end_world = mouse_world_pos
 
-                             # Calculate velocity from drag vector (world units -> m/s)
-                             drag_vector_world = add_end_world - add_start_world # Sim units
-                             vel_m_s = drag_vector_world * VELOCITY_DRAG_SCALE
+                            # Calculate velocity from drag vector (world units -> m/s)
+                            drag_vector_world = add_end_world - add_start_world # Sim units
+                            vel_m_s = drag_vector_world * VELOCITY_DRAG_SCALE
 
-                             # Create new body
+                            # Create new body
                             new_body = Body(
                                 mass=next_body_mass,
                                 pos=[add_start_world[0], add_start_world[1], 0.0],
@@ -520,24 +531,24 @@ def main(softening_length_override=None):
                                 name=f"Body_{Body.ID_counter}",
                                 show_trail=SHOW_TRAILS,
                             )
-                             bodies.append(new_body)
-                             status_text_label.set_text(f"Added {new_body.name}")
-                             color_index = (color_index + 1) % len(color_options)
-                         adding_body_state = 0 # Reset state regardless
+                            bodies.append(new_body)
+                            status_text_label.set_text(f"Added {new_body.name}")
+                            color_index = (color_index + 1) % len(color_options)
+                        adding_body_state = 0 # Reset state regardless
 
             elif event.type == pygame.MOUSEMOTION:
-                 # Handle motion only if not over UI? Or allow dragging over UI?
-                 # Let's allow dragging over UI for now, but panning stops if mouse enters UI.
-                 if dragging_body and selected_body: # Dragging selected body
-                     new_body_center_screen = mouse_screen_pos - mouse_offset
-                     selected_body.pos = (new_body_center_screen - current_pan) / (current_zoom + 1e-18)
-                     if paused: selected_body.vel = np.zeros(2) # Reset velocity if paused
-                     selected_body.clear_trail() # Avoid trail jumps while dragging
+                # Handle motion only if not over UI? Or allow dragging over UI?
+                # Let's allow dragging over UI for now, but panning stops if mouse enters UI.
+                if dragging_body and selected_body: # Dragging selected body
+                    new_body_center_screen = mouse_screen_pos - mouse_offset
+                    selected_body.pos = (new_body_center_screen - current_pan) / (current_zoom + 1e-18)
+                    if paused: selected_body.vel = np.zeros(2) # Reset velocity if paused
+                    selected_body.clear_trail() # Avoid trail jumps while dragging
 
-                 elif dragging_camera and not mouse_over_ui: # Panning camera only if mouse outside UI
-                     drag_delta_screen = mouse_screen_pos - camera_drag_start_screen
-                     # Target pan is the pan at drag start + the screen delta
-                     target_pan = camera_drag_start_pan + drag_delta_screen
+                elif dragging_camera and not mouse_over_ui: # Panning camera only if mouse outside UI
+                    drag_delta_screen = mouse_screen_pos - camera_drag_start_screen
+                    # Target pan is the pan at drag start + the screen delta
+                    target_pan = camera_drag_start_pan + drag_delta_screen
 
             elif event.type == pygame.KEYDOWN:
                  # Keyboard shortcuts usually don't need UI hover check
@@ -694,19 +705,26 @@ def main(softening_length_override=None):
 
         # --- Update Status Bar ---
         if not paused:
-             # Update status text less frequently for performance
-             current_ticks = pygame.time.get_ticks()
-             if not hasattr(main, 'last_status_update') or current_ticks - main.last_status_update > 100: # Update every 100ms
-                 main.last_status_update = current_ticks
-                 status_info = (f"Time: {time_to_display(simulation_time)} | "
-                               f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
-                               f"Zoom: {current_zoom/ZOOM_BASE:.1f}x")
-                 # Add energy calculation if needed (can be slow)
-                 # try:
-                 #    ke, pe, te = calculate_system_energies(bodies, INITIAL_G * gravity_multiplier) # Use scaled G
-                 #    status_info += f" | E: {te:.2e} J"
-                 # except Exception: pass # Ignore energy calc errors
-                 status_text_label.set_text(status_info)
+            # Update status text less frequently for performance
+            current_ticks = pygame.time.get_ticks()
+            if (
+                not hasattr(main, "last_status_update")
+                or current_ticks - main.last_status_update > 100
+            ):  # Update every 100ms
+                main.last_status_update = current_ticks
+                status_info = (
+                    f"Time: {time_to_display(simulation_time)} | "
+                    f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
+                    f"Zoom: {current_zoom/ZOOM_BASE:.1f}x | "
+                    f"G: {gravity_multiplier:.1f}x"
+                )
+                # Add energy calculation if needed (can be slow)
+                # try:
+                #     ke, pe, te = calculate_system_energies(bodies, INITIAL_G * gravity_multiplier)  # Use scaled G
+                #     status_info += f" | E: {te:.2e} J"
+                # except Exception:
+                #     pass  # Ignore energy calc errors
+                status_text_label.set_text(status_info)
 
 
         # --- UI Update & Draw ---
@@ -773,4 +791,3 @@ if __name__ == "__main__":
             print("\n--------------------\n")
             pygame.quit()
             input("Press Enter to exit...")
-
