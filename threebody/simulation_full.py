@@ -2,6 +2,9 @@ import pygame
 import math
 import numpy as np
 import pygame.gfxdraw
+import logging
+import argparse
+import os
 
 # Ensure Matplotlib is installed: pip install matplotlib
 try:
@@ -48,8 +51,6 @@ def main():
     """Main simulation loop."""
     # <<< Declare global flags modified within main's event loop >>>
     global SHOW_TRAILS, SHOW_GRAV_FIELD, ADAPTIVE_STEPPING, SPEED_FACTOR
-    # <<< Access DEBUG counters for resetting >>>
-    global DEBUG_DRAW_COUNT, DEBUG_COLLISION_COUNT, DEBUG_PHYSICS_COUNT
 
     # --- Pygame and UI Initialization ---
     pygame.init()
@@ -235,11 +236,6 @@ def main():
         nonlocal target_zoom, target_pan, current_zoom, current_pan
         # <<< Use nonlocal for gravity_multiplier >>>
         nonlocal gravity_multiplier
-        # Use global for module-level DEBUG counters
-        global DEBUG_DRAW_COUNT, DEBUG_COLLISION_COUNT, DEBUG_PHYSICS_COUNT
-        DEBUG_DRAW_COUNT = 0 # Reset debug counters
-        DEBUG_COLLISION_COUNT = 0
-        DEBUG_PHYSICS_COUNT = 0
 
 
         if preset_name not in PRESETS:
@@ -574,14 +570,15 @@ def main():
         if not paused and bodies:
             # <<< Use gravity multiplier >>>
             current_g = INITIAL_G * gravity_multiplier
-            # <<< DEBUG PRINT for Gravity >>>
-            # if DEBUG_PHYSICS_COUNT < 5:
-            #     print(f"Frame {DEBUG_PHYSICS_COUNT}: Using G = {current_g:.3e} (Multiplier: {gravity_multiplier:.2f})")
-            #     if DEBUG_PHYSICS_COUNT == 4: print("--- End G Debug ---")
-            #     DEBUG_PHYSICS_COUNT += 1
-            # <<< End Debug Print >>>
 
-            sim_dt_propose = time_step * SPEED_FACTOR # Proposed step size for this frame
+            sim_dt_propose = time_step * SPEED_FACTOR  # Proposed step size for this frame
+            logging.debug(
+                "Physics update: time=%.2f dt=%.2f G=%.3e bodies=%d",
+                simulation_time,
+                sim_dt_propose,
+                current_g,
+                len(bodies),
+            )
             time_advanced_this_frame = 0.0
 
             # Get world bounds for boundary checks (in simulation units)
@@ -724,9 +721,22 @@ def main():
 
 # --- Entry Point ---
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="N-Body Simulation")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose debug logging",
+    )
+    args = parser.parse_args()
+
+    env_verbose = os.getenv("THREEBODY_VERBOSE", "0") == "1"
+    log_level = logging.DEBUG if args.verbose or env_verbose else logging.INFO
+    logging.basicConfig(level=log_level, format="%(levelname)s:%(message)s")
+
     # Check for dependencies before running main
     if not PYGAME_GUI_AVAILABLE:
-         print("\nExiting due to missing pygame_gui dependency.")
+        print("\nExiting due to missing pygame_gui dependency.")
     else:
         try:
             main()
@@ -739,6 +749,5 @@ if __name__ == "__main__":
             traceback.print_exc()
             print("\n--------------------\n")
             pygame.quit()
-            # Keep console open to see error in some environments
             input("Press Enter to exit...")
 
