@@ -41,14 +41,26 @@ from . import __version__
 from .utils import mass_to_display, distance_to_display, time_to_display
 from .presets import PRESETS
 from .rendering import Body, render_gravitational_field
-from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_rk4_step, detect_and_handle_collisions, get_world_bounds_sim
+from .physics_utils import (
+    calculate_center_of_mass,
+    perform_rk4_step,
+    adaptive_rk4_step,
+    perform_leapfrog_step,
+    detect_and_handle_collisions,
+    get_world_bounds_sim,
+)
 
 
 
 
 
 # --- Main Simulation Function ---
-def main(softening_length_override=None):
+def main(
+    softening_length_override=None,
+    integrator="rk4",
+    time_step_override=None,
+    error_tolerance_override=None,
+):
     """Main simulation loop."""
     # <<< Declare global flags modified within main's event loop >>>
     global SHOW_TRAILS, SHOW_GRAV_FIELD, ADAPTIVE_STEPPING, SPEED_FACTOR
@@ -201,7 +213,9 @@ def main(softening_length_override=None):
     # --- Simulation State Variables (defined within main) ---
     bodies = []
     current_preset_name = "Sun & Earth" # Initial preset
-    time_step = TIME_STEP_BASE # Current adaptive step size suggestion
+    time_step = time_step_override if time_step_override is not None else TIME_STEP_BASE
+    error_tolerance = error_tolerance_override if error_tolerance_override is not None else ERROR_TOLERANCE
+    current_integrator = integrator
     paused = False
     running = True
     use_boundaries = True
@@ -237,7 +251,7 @@ def main(softening_length_override=None):
         nonlocal target_zoom, target_pan, current_zoom, current_pan
         # <<< Use nonlocal for gravity_multiplier >>>
         nonlocal gravity_multiplier
-        nonlocal softening_length_override
+        nonlocal softening_length_override, time_step_override
 
 
         if preset_name not in PRESETS:
@@ -268,7 +282,7 @@ def main(softening_length_override=None):
                                fixed=fixed, name=name, show_trail=SHOW_TRAILS))
 
         simulation_time = 0.0
-        time_step = TIME_STEP_BASE # Reset adaptive step size
+        time_step = time_step_override if time_step_override is not None else TIME_STEP_BASE
         current_preset_name = preset_name
         selected_body = None # Deselect body on preset load
         selected_body_name_label.set_text("Name: None")
@@ -591,16 +605,23 @@ def main(softening_length_override=None):
             # Get world bounds for boundary checks (in simulation units)
             world_bounds_sim = get_world_bounds_sim(current_zoom, current_pan) if use_boundaries else None
 
-            if ADAPTIVE_STEPPING:
+            if current_integrator == "rk4" and ADAPTIVE_STEPPING:
                 # Adaptive step updates bodies internally if accepted
                 time_advanced, next_dt_suggestion = adaptive_rk4_step(
-                    bodies, sim_dt_propose, current_g, ERROR_TOLERANCE, use_boundaries, world_bounds_sim
+                    bodies,
+                    sim_dt_propose,
+                    current_g,
+                    error_tolerance,
+                    use_boundaries,
+                    world_bounds_sim,
                 )
                 time_step = next_dt_suggestion # Use suggestion for next frame's proposal
                 time_advanced_this_frame = time_advanced # Record how much time actually passed
             else:
-                # Fixed step RK4
-                new_positions, new_velocities = perform_rk4_step(bodies, sim_dt_propose, current_g)
+                if current_integrator == "rk4":
+                    new_positions, new_velocities = perform_rk4_step(bodies, sim_dt_propose, current_g)
+                else:
+                    new_positions, new_velocities = perform_leapfrog_step(bodies, sim_dt_propose, current_g)
                 # Update bodies manually
                 for i, body in enumerate(bodies):
                     if not body.fixed:
@@ -741,6 +762,24 @@ if __name__ == "__main__":
         default=None,
         help="Softening length in metres (overrides preset value)",
     )
+    parser.add_argument(
+        "--integrator",
+        choices=["rk4", "symplectic"],
+        default="rk4",
+        help="Integrator to use (rk4 or symplectic)",
+    )
+    parser.add_argument(
+        "--time-step",
+        type=float,
+        default=TIME_STEP_BASE,
+        help="Initial time step in seconds",
+    )
+    parser.add_argument(
+        "--error-tolerance",
+        type=float,
+        default=ERROR_TOLERANCE,
+        help="Error tolerance for adaptive RK4",
+    )
     args = parser.parse_args()
 
     env_verbose = os.getenv("THREEBODY_VERBOSE", "0") == "1"
@@ -752,7 +791,12 @@ if __name__ == "__main__":
         print("\nExiting due to missing pygame_gui dependency.")
     else:
         try:
-            main(softening_length_override=args.softening_length)
+            main(
+                softening_length_override=args.softening_length,
+                integrator=args.integrator,
+                time_step_override=args.time_step,
+                error_tolerance_override=args.error_tolerance,
+            )
         except Exception as e:
             print(f"\n--- Simulation Runtime Error ---")
             print(f"Error Type: {type(e).__name__}")

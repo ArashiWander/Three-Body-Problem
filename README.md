@@ -28,7 +28,13 @@ python -m threebody.simulation_full
 ```
 
 Use `--softening-length` to override the gravitational softening length in
-metres when launching the simulation.
+metres when launching the simulation. Additional command line flags:
+
+```
+--integrator {rk4,symplectic}  Integration scheme (default rk4)
+--time-step SECONDS            Initial step size
+--error-tolerance VALUE        Adaptive RK4 tolerance
+```
 
 ### Quick Start
 
@@ -70,6 +76,8 @@ Two integrators are provided:
 * **Adaptive RK4** via :py:meth:`threebody.physics_utils.adaptive_rk4_step` –
   automatically adjusts the time step to keep the estimated local error below
   ``ERROR_TOLERANCE``.
+* **Symplectic Leapfrog** via ``--integrator symplectic`` – lower accuracy but
+  good long-term stability.
 
 These are standard explicit Runge–Kutta methods as described in
 [Hairer et&nbsp;al.](https://doi.org/10.1007/978-3-642-05415-1).
