@@ -95,10 +95,21 @@ def main(softening_length_override=None):
     speed_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), start_value=SPEED_FACTOR, value_range=(0.05, 5.0), manager=ui_manager, container=control_panel)
     y_pos += 30
     # Gravity Multiplier Slider
-    gravity_label = pygame_gui.elements.UILabel(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), text="Gravity: 10.0x", manager=ui_manager, container=control_panel) # Start label at 10.0x
+    gravity_label = pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+        text="Gravity: 1.0x",
+        manager=ui_manager,
+        container=control_panel,
+    )
     y_pos += 20
     # Range increased to 100x
-    gravity_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)), start_value=10.0, value_range=(0.0, 100.0), manager=ui_manager, container=control_panel)
+    gravity_slider = pygame_gui.elements.UIHorizontalSlider(
+        relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 20)),
+        start_value=1.0,
+        value_range=(0.1, 100.0),
+        manager=ui_manager,
+        container=control_panel,
+    )
     y_pos += 30
     adaptive_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((10, y_pos), (UI_SIDEBAR_WIDTH - 20, 30)), text=f"Adaptive Step: {'ON' if ADAPTIVE_STEPPING else 'OFF'}", manager=ui_manager, container=control_panel)
     y_pos += 40
@@ -224,8 +235,8 @@ def main(softening_length_override=None):
     color_index = 0
     adding_body_state = 0 # 0: idle, 1: dragging to set velocity
     add_body_start_screen = np.zeros(2) # Screen position where right-click started
-    # <<< Gravity multiplier state - Default set to 10.0 >>>
-    gravity_multiplier = 10.0
+    # <<< Gravity multiplier state - Default set to 1.0 >>>
+    gravity_multiplier = 1.0
     # --- End Simulation State Variables ---
 
 
@@ -288,7 +299,7 @@ def main(softening_length_override=None):
         trail_length_label.set_text(f"Trail: {DEFAULT_TRAIL_LENGTH}")
         trail_length_slider.disable()
         # <<< Reset gravity multiplier and slider on preset load to new default >>>
-        gravity_multiplier = 10.0
+        gravity_multiplier = 1.0
         gravity_slider.set_current_value(gravity_multiplier)
         gravity_label.set_text(f"Gravity: {gravity_multiplier:.2f}x")
         # <<< End Reset >>>
@@ -698,9 +709,12 @@ def main(softening_length_override=None):
              current_ticks = pygame.time.get_ticks()
              if not hasattr(main, 'last_status_update') or current_ticks - main.last_status_update > 100: # Update every 100ms
                  main.last_status_update = current_ticks
-                 status_info = (f"Time: {time_to_display(simulation_time)} | "
-                               f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
-                               f"Zoom: {current_zoom/ZOOM_BASE:.1f}x")
+                status_info = (
+                    f"Time: {time_to_display(simulation_time)} | "
+                    f"Bodies: {len(bodies)} | Step: {time_step:.1f}s | "
+                    f"Zoom: {current_zoom/ZOOM_BASE:.1f}x | "
+                    f"G: {gravity_multiplier:.1f}x"
+                )
                  # Add energy calculation if needed (can be slow)
                  # try:
                  #    ke, pe, te = calculate_system_energies(bodies, INITIAL_G * gravity_multiplier) # Use scaled G
