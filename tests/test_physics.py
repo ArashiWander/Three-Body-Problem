@@ -2,6 +2,7 @@ import numpy as np
 import math
 
 from threebody.physics import Body, accelerations, perform_rk4_step, SPACE_SCALE
+from threebody.physics_utils import adaptive_rk4_step
 
 
 def test_accelerations_fixed_body():
@@ -43,3 +44,20 @@ def test_rk4_step_zero_distance():
     expected_disp = 1.0 / SPACE_SCALE
     assert math.isclose(b1.pos[0], expected_disp, rel_tol=1e-12)
     assert math.isclose(b2.pos[0], -expected_disp, rel_tol=1e-12)
+
+
+def test_adaptive_rk4_step_basic():
+    body = Body(1.0, [0.0, 0.0], [1.0, 0.0])
+    dt, dt_new = adaptive_rk4_step(
+        [body],
+        20.0,
+        g_constant=0.0,
+        error_tolerance=1e-6,
+        use_boundaries=False,
+        bounds_sim=None,
+    )
+    assert dt == 20.0
+    assert dt_new == 40.0
+    expected = 20.0 / SPACE_SCALE
+    assert math.isclose(body.pos[0], expected, rel_tol=1e-12)
+    assert math.isclose(body.vel[0], 1.0, rel_tol=1e-12)
