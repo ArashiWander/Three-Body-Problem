@@ -5,7 +5,7 @@ from threebody.integrators import compute_accelerations
 
 
 def _total_momentum(bodies):
-    p = np.zeros(2, dtype=float)
+    p = np.zeros(3, dtype=float)
     for b in bodies:
         if not getattr(b, "fixed", False):
             p += b.mass * b.vel
@@ -27,9 +27,9 @@ def test_energy_momentum_long_term():
     r = 1.496e11 / SPACE_SCALE
     v = 29780.0
 
-    sun_vel = np.array([0.0, -(earth_mass / sun_mass) * v])
-    sun = Body(sun_mass, [0.0, 0.0], sun_vel)
-    earth = Body(earth_mass, [r, 0.0], [0.0, v])
+    sun_vel = np.array([0.0, -(earth_mass / sun_mass) * v, 0.0])
+    sun = Body(sun_mass, [0.0, 0.0, 0.0], sun_vel)
+    earth = Body(earth_mass, [r, 0.0, 0.0], [0.0, v, 0.0])
     bodies = [sun, earth]
 
     e0 = system_energy(bodies, G_REAL)[2]
@@ -52,9 +52,9 @@ def test_leapfrog_integrator_accuracy():
     r = 1.496e11 / SPACE_SCALE
     v = 29780.0
 
-    positions = np.array([[0.0, 0.0], [r, 0.0]], dtype=float)
+    positions = np.array([[0.0, 0.0, 0.0], [r, 0.0, 0.0]], dtype=float)
     velocities = np.array(
-        [[0.0, -(earth_mass / sun_mass) * v], [0.0, v]], dtype=float
+        [[0.0, -(earth_mass / sun_mass) * v, 0.0], [0.0, v, 0.0]], dtype=float
     )
     masses = np.array([sun_mass, earth_mass], dtype=float)
     fixed_mask = np.array([False, False], dtype=bool)
@@ -73,5 +73,5 @@ def test_leapfrog_integrator_accuracy():
 
     earth_final_pos = positions[1]
     assert math.isclose(e0, e1, rel_tol=1e-6)
-    assert np.allclose(earth_final_pos, [r, 0.0], atol=5e-2)
+    assert np.allclose(earth_final_pos, [r, 0.0, 0.0], atol=5e-2)
 
