@@ -18,6 +18,7 @@ pip install .
 Numba is used for optional JIT acceleration. If it is missing or fails to
 initialize, the simulation automatically falls back to pure Python code so all
 features remain available.
+Installing `cupy` enables optional GPU support.
 
 ## Running the Simulation
 
@@ -28,13 +29,7 @@ python -m threebody.simulation_full
 ```
 
 Use `--softening-length` to override the gravitational softening length in
-metres when launching the simulation. Additional command line flags:
 
-```
---integrator {rk4,symplectic}  Integration scheme (default rk4)
---time-step SECONDS            Initial step size
---error-tolerance VALUE        Adaptive RK4 tolerance
-```
 
 ### Quick Start
 
@@ -69,21 +64,23 @@ The interactive application uses a richer `Body` implementation found in
 
 ## Integrator Choices
 
-Two integrators are provided:
+Three integrators are provided:
 
 * **Fixed Step RK4** via :py:meth:`perform_rk4_step` – classical fourth-order
   Runge–Kutta integration.
 * **Adaptive RK4** via :py:meth:`threebody.physics_utils.adaptive_rk4_step` –
   automatically adjusts the time step to keep the estimated local error below
   ``ERROR_TOLERANCE``.
-* **Symplectic Leapfrog** via ``--integrator symplectic`` – lower accuracy but
-  good long-term stability.
 
-These are standard explicit Runge–Kutta methods as described in
-[Hairer et&nbsp;al.](https://doi.org/10.1007/978-3-642-05415-1).
+
+These are standard explicit methods as described in
+[Hairer et&nbsp;al.](https://doi.org/10.1007/978-3-642-05415-1) and
+[Leimkuhler &amp; Reich, 2004](https://doi.org/10.1017/CBO9780511614117) for the
+symplectic scheme.
 
 In the interactive simulation you can toggle adaptive stepping at runtime by
-pressing <kbd>A</kbd> as described in the in‑app help window.
+pressing <kbd>A</kbd>. A ``--use-gpu`` flag enables GPU acceleration when a
+compatible CUDA device and the optional CuPy package are available.
 
 ## Unit Conventions
 
@@ -121,6 +118,18 @@ retains. The length is clamped between `MIN_TRAIL_LENGTH` and
 `True` the bodies combine into one mass; otherwise they bounce using a simple
 elastic collision model.
 
+## Configuration Parameters
+
+The `threebody.constants` module exposes numerous tuning options. Important
+values include:
+
+* ``SPACE_SCALE`` – number of metres represented by one simulation unit.
+* ``TIME_STEP_BASE`` – default integration step size in seconds.
+* ``ERROR_TOLERANCE`` – target accuracy for adaptive stepping.
+* ``SOFTENING_LENGTH`` – softening length in metres used to avoid numerical
+  singularities. Override this at runtime with ``--softening-length`` when
+  launching ``simulation_full``.
+
 ## Simulation Accuracy
 
 Both integrators are fourth‑order Runge–Kutta schemes which provide good
@@ -137,10 +146,17 @@ or enabling adaptive stepping improves long‑term stability.
 Several presets bundled with the app allow you to verify the simulator against
 well known solutions.  Select **Figure 8** from the preset menu to reproduce the
 periodic three‑body orbit described by [Chenciner & Montgomery, 2000](https://doi.org/10.1007/s002200050016).
+To reproduce the automated benchmarks used during development run
 
-Running `pytest` executes a small benchmark where the Earth orbits the Sun for
-30 days and checks that the total energy drift stays under 0.1%.  The relevant
-test lives in `tests/test_energy.py`.
+```bash
+pip install -r requirements.txt
+NUMBA_DISABLE_JIT=1 PYTHONPATH=. pytest -k benchmark -q
+```
+
+This executes a scenario where the Earth orbits the Sun for 30 days and checks
+that the energy drift stays below 0.1% using the symplectic integrator. The
+benchmark definitions live in ``tests/test_energy.py`` and can be modified to
+experiment with alternative parameters.
 
 ## Tests
 
@@ -153,6 +169,17 @@ NUMBA_DISABLE_JIT=1 PYTHONPATH=. pytest -q
 
 Disabling numba's JIT avoids startup issues on systems where the bundled
 llvmlite does not support the host CPU's features.
+
+## Scientific References
+
+* Newton's law of gravitation – *Philosophiæ Naturalis Principia Mathematica*, 1687.
+* E. Hairer, S. P. Nørsett &amp; G. Wanner, *Solving Ordinary Differential
+  Equations I*, 2nd edition, Springer, 2008.
+* B. Leimkuhler &amp; S. Reich, *Simulating Hamiltonian Dynamics*, Cambridge
+  University Press, 2004.
+* A. Chenciner &amp; R. Montgomery, "A remarkable periodic solution of the
+  three-body problem in the case of equal masses," *Annals of Mathematics*,
+  152(3), 2000.
 
 ## License
 
