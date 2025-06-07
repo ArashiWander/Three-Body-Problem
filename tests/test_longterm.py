@@ -13,12 +13,17 @@ def _total_momentum(bodies):
 
 
 def _leapfrog_step(pos, vel, masses, fixed_mask, dt, g=G_REAL):
+    orig_dim = vel.shape[1]
+    if orig_dim == 2:
+        vel = np.hstack([vel, np.zeros((len(masses), 1), dtype=vel.dtype)])
+    if pos.shape[1] == 2:
+        pos = np.hstack([pos, np.zeros((len(masses), 1), dtype=pos.dtype)])
     acc = compute_accelerations(pos, masses, fixed_mask, g)
     vel_half = vel + 0.5 * dt * acc
     pos = pos + dt * vel_half / SPACE_SCALE
     acc_new = compute_accelerations(pos, masses, fixed_mask, g)
     vel = vel_half + 0.5 * dt * acc_new
-    return pos, vel
+    return pos[:, :orig_dim], vel[:, :orig_dim]
 
 
 def test_energy_momentum_long_term():
