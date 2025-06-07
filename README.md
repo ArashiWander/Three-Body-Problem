@@ -27,6 +27,9 @@ Start the interactive application with:
 python -m threebody.simulation_full
 ```
 
+Use `--softening-length` to override the gravitational softening length in
+metres when launching the simulation.
+
 ### Quick Start
 
 After launching you will see a control panel on the left. To get moving quickly:

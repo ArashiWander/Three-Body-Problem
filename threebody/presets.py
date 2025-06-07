@@ -1,4 +1,5 @@
 """Celestial presets used by the simulation."""
+
 from . import constants as C
 
 PRESETS = {
@@ -190,3 +191,6 @@ PRESETS = {
         },
     ],
 }
+
+# Optional softening length (in metres) per preset
+PRESET_SOFTENING_LENGTHS = {name: C.SOFTENING_LENGTH for name in PRESETS}
