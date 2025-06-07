@@ -45,7 +45,9 @@ class Simulation:
         if init_pygame:
             pygame.init()
             self.screen = pygame.display.set_mode((C.WIDTH, C.HEIGHT))
-            pygame.display.set_caption(f"N-Body Simulation v{__version__}")
+            pygame.display.set_caption(
+                f"N-Body Simulation v{_PACKAGE_VERSION}"
+            )
             self.clock = pygame.time.Clock()
         else:
             self.screen = None
