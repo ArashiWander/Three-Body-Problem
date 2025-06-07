@@ -4,6 +4,18 @@ import numpy as np
 
 from . import constants as C
 
+try:  # optional GPU acceleration
+    import cupy as cp  # type: ignore
+
+    try:
+        cp.cuda.runtime.getDeviceCount()
+        _CUPY_GPU_AVAILABLE = True
+    except Exception:  # pragma: no cover - no GPU available
+        _CUPY_GPU_AVAILABLE = False
+except Exception:  # pragma: no cover - CuPy not installed
+    cp = None  # type: ignore
+    _CUPY_GPU_AVAILABLE = False
+
 
 def compute_accelerations(
     positions: np.ndarray,
@@ -27,18 +39,49 @@ def compute_accelerations(
 
     Returns
     -------
-    (N, 3) ndarray
-        Accelerations in metres per second squared.
+    ndarray
+        Accelerations in metres per second squared with the same dimensionality
+        as ``positions``.
+
+    Notes
+    -----
+    If CuPy is installed and a CUDA-capable GPU is detected, the computation
+    runs on the GPU automatically. If GPU acceleration is unavailable or any
+    error occurs, the function falls back to the CPU implementation.
     """
 
+    if _CUPY_GPU_AVAILABLE:
+        try:  # pragma: no cover - GPU path not tested without hardware
+            return _compute_accelerations_gpu(
+                positions, masses, fixed_mask, g_constant
+            )
+        except Exception:
+            pass
+
+    return _compute_accelerations_cpu(
+        positions, masses, fixed_mask, g_constant
+    )
+
+
+def _compute_accelerations_cpu(
+    positions: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    g_constant: float,
+) -> np.ndarray:
     n = len(masses)
     if n == 0:
-        return np.zeros((0, 3), dtype=np.float64)
+        return np.zeros((0, positions.shape[1]), dtype=np.float64)
 
-    dim = positions.shape[1]
-    if dim == 2:
-        positions = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
+    orig_dim = positions.shape[1]
+    if orig_dim == 2:
+        positions = np.hstack([
+            positions,
+            np.zeros((n, 1), dtype=positions.dtype),
+        ])
         dim = 3
+    else:
+        dim = orig_dim
 
     acc = np.zeros((n, dim), dtype=np.float64)
     for i in range(n):
@@ -59,7 +102,47 @@ def compute_accelerations(
 
         acc[i] = np.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
 
-    return acc
+    return acc[:, :orig_dim]
+
+
+def _compute_accelerations_gpu(
+    positions: np.ndarray,
+    masses: np.ndarray,
+    fixed_mask: np.ndarray,
+    g_constant: float,
+) -> np.ndarray:
+    pos_gpu = cp.asarray(positions, dtype=cp.float64)
+    masses_gpu = cp.asarray(masses, dtype=cp.float64)
+
+    n = len(masses)
+    if n == 0:
+        return np.zeros((0, positions.shape[1]), dtype=np.float64)
+
+    orig_dim = positions.shape[1]
+    if orig_dim == 2:
+        pos_gpu = cp.hstack([pos_gpu, cp.zeros((n, 1), dtype=pos_gpu.dtype)])
+        dim = 3
+    else:
+        dim = orig_dim
+
+    acc_gpu = cp.zeros((n, dim), dtype=cp.float64)
+    for i in range(n):
+        if fixed_mask[i]:
+            continue
+
+        r_vec = pos_gpu - pos_gpu[i]
+        dist_sq = cp.einsum("ij,ij->i", r_vec, r_vec)
+        dist_sq[i] = cp.inf
+
+        dist_sq_m = dist_sq * (C.SPACE_SCALE ** 2)
+
+        inv_dist = cp.where(dist_sq > 0.0, 1.0 / cp.sqrt(dist_sq), 0.0)
+
+        factors = g_constant * masses_gpu / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
+
+        acc_gpu[i] = cp.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
+
+    return cp.asnumpy(acc_gpu)[:, :orig_dim]
 
 
 def rk4_step_arrays(

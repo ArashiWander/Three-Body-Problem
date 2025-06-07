@@ -20,6 +20,17 @@ initialize, the simulation automatically falls back to pure Python code so all
 features remain available.
 Installing `cupy` enables optional GPU support.
 
+CuPy can be installed to run the core gravitational calculation on a CUDA GPU.
+Install a build matching your CUDA toolkit, for example:
+
+```bash
+pip install cupy-cuda12x
+```
+
+With CuPy available and a compatible GPU present, `compute_accelerations`
+automatically performs its work on the GPU. If no GPU is detected it silently
+falls back to the CPU.
+
 ## Running the Simulation
 
 Start the interactive application with:
