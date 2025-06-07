@@ -264,8 +264,18 @@ def main(softening_length_override=None):
             fixed = body_config.get("fixed", False)
             name = body_config.get("name", f"Body_{Body.ID_counter}")
 
-            bodies.append(Body(mass, x_sim, y_sim, vx_m_s, vy_m_s, color, radius_px,
-                               fixed=fixed, name=name, show_trail=SHOW_TRAILS))
+            bodies.append(
+                Body(
+                    mass,
+                    [x_sim, y_sim, 0.0],
+                    [vx_m_s, vy_m_s, 0.0],
+                    color,
+                    radius_px,
+                    fixed=fixed,
+                    name=name,
+                    show_trail=SHOW_TRAILS,
+                )
+            )
 
         simulation_time = 0.0
         time_step = TIME_STEP_BASE # Reset adaptive step size
@@ -501,15 +511,15 @@ def main(softening_length_override=None):
                              vel_m_s = drag_vector_world * VELOCITY_DRAG_SCALE
 
                              # Create new body
-                             new_body = Body(
-                                 mass=next_body_mass,
-                                 x=add_start_world[0], y=add_start_world[1], # Sim units
-                                 vx=vel_m_s[0], vy=vel_m_s[1], # m/s
-                                 color=color_options[color_index],
-                                 radius=next_body_radius_pixels, # Pixels
-                                 name=f"Body_{Body.ID_counter}", # ID increments in Body init
-                                 show_trail=SHOW_TRAILS
-                             )
+                            new_body = Body(
+                                mass=next_body_mass,
+                                pos=[add_start_world[0], add_start_world[1], 0.0],
+                                vel=[vel_m_s[0], vel_m_s[1], 0.0],
+                                color=color_options[color_index],
+                                radius=next_body_radius_pixels,
+                                name=f"Body_{Body.ID_counter}",
+                                show_trail=SHOW_TRAILS,
+                            )
                              bodies.append(new_body)
                              status_text_label.set_text(f"Added {new_body.name}")
                              color_index = (color_index + 1) % len(color_options)

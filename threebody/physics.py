@@ -14,30 +14,32 @@ class Body:
     """Simple body representation for physics computations."""
 
     def __init__(self, mass, pos, vel, fixed: bool = False):
-        """Create a body.
+        """Create a body storing position and velocity as 3-D vectors.
 
         Parameters
         ----------
         mass : float
             Mass of the body in kilograms.
         pos : array-like
-            Initial position. 2-D values are padded with ``z=0``.
+            Initial position. Values with fewer than three components are padded
+            with zeros.
         vel : array-like
-            Initial velocity. 2-D values are padded with ``z=0``.
+            Initial velocity. Values with fewer than three components are padded
+            with zeros.
         fixed : bool, optional
             If True the body does not move when integrated.
         """
 
         self.mass = float(mass)
-        p = np.asarray(pos, dtype=float)
-        if p.size == 2:
-            p = np.append(p, 0.0)
-        self.pos = p.astype(float)
+        p = np.asarray(pos, dtype=float).reshape(-1)
+        if p.size < 3:
+            p = np.pad(p, (0, 3 - p.size))
+        self.pos = p[:3]
 
-        v = np.asarray(vel, dtype=float)
-        if v.size == 2:
-            v = np.append(v, 0.0)
-        self.vel = v.astype(float)
+        v = np.asarray(vel, dtype=float).reshape(-1)
+        if v.size < 3:
+            v = np.pad(v, (0, 3 - v.size))
+        self.vel = v[:3]
 
         self.fixed = fixed
 

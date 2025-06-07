@@ -16,12 +16,21 @@ class Body:
     """Represents a celestial body with physical and visual properties."""
     ID_counter = 0
 
-    def __init__(self, mass, x, y, vx, vy, color, radius, z=0.0, vz=0.0,
+    def __init__(self, mass, pos, vel, color, radius,
                  max_trail_length=C.DEFAULT_TRAIL_LENGTH,
                  fixed=False, name=None, show_trail=True):
+        """Create a body storing position/velocity as 3-D vectors."""
         self.mass = float(mass)
-        self.pos = np.array([float(x), float(y), float(z)], dtype=np.float64)
-        self.vel = np.array([float(vx), float(vy), float(vz)], dtype=np.float64)
+        p = np.asarray(pos, dtype=float).reshape(-1)
+        if p.size < 3:
+            p = np.pad(p, (0, 3 - p.size))
+        self.pos = p[:3]
+
+        v = np.asarray(vel, dtype=float).reshape(-1)
+        if v.size < 3:
+            v = np.pad(v, (0, 3 - v.size))
+        self.vel = v[:3]
+
         self.acc = np.zeros(3, dtype=np.float64)
         self.fixed = fixed
         self.color = color
@@ -42,25 +51,17 @@ class Body:
         )
 
     @staticmethod
-    def from_meters(mass, x_m, y_m, vx_m_s, vy_m_s, color, radius,
-                    z_m=0.0, vz_m_s=0.0,
+    def from_meters(mass, pos_m, vel_m_s, color, radius,
                     max_trail_length=C.DEFAULT_TRAIL_LENGTH, fixed=False,
                     name=None, show_trail=True):
-        """Create a body using metre based coordinates.
-
-        Parameters are identical to :class:`Body` except that ``x_m`` and
-        ``y_m`` are specified in real metres rather than simulation units.
-        """
+        """Create a body using metre based coordinates."""
+        pos_sim = np.asarray(pos_m, dtype=float) / C.SPACE_SCALE
         return Body(
             mass,
-            x_m / C.SPACE_SCALE,
-            y_m / C.SPACE_SCALE,
-            vx_m_s,
-            vy_m_s,
+            pos_sim,
+            vel_m_s,
             color,
             radius,
-            z=z_m / C.SPACE_SCALE,
-            vz=vz_m_s,
             max_trail_length=max_trail_length,
             fixed=fixed,
             name=name,
@@ -69,12 +70,14 @@ class Body:
 
     def update_physics_state(self, new_pos_sim, new_vel_m_s):
         if not self.fixed:
-            self.pos = np.asarray(new_pos_sim, dtype=float)
-            if self.pos.size == 2:
-                self.pos = np.append(self.pos, 0.0)
-            self.vel = np.asarray(new_vel_m_s, dtype=float)
-            if self.vel.size == 2:
-                self.vel = np.append(self.vel, 0.0)
+            p = np.asarray(new_pos_sim, dtype=float).reshape(-1)
+            if p.size < 3:
+                p = np.pad(p, (0, 3 - p.size))
+            self.pos = p[:3]
+            v = np.asarray(new_vel_m_s, dtype=float).reshape(-1)
+            if v.size < 3:
+                v = np.pad(v, (0, 3 - v.size))
+            self.vel = v[:3]
 
     def update_trail(self, zoom, pan_offset):
         if not self.show_trail or not self.visible:
