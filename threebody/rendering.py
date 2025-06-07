@@ -16,12 +16,13 @@ class Body:
     """Represents a celestial body with physical and visual properties."""
     ID_counter = 0
 
-    def __init__(self, mass, x, y, vx, vy, color, radius, max_trail_length=C.DEFAULT_TRAIL_LENGTH,
+    def __init__(self, mass, x, y, vx, vy, color, radius, z=0.0, vz=0.0,
+                 max_trail_length=C.DEFAULT_TRAIL_LENGTH,
                  fixed=False, name=None, show_trail=True):
         self.mass = float(mass)
-        self.pos = np.array([float(x), float(y)], dtype=np.float64)
-        self.vel = np.array([float(vx), float(vy)], dtype=np.float64)
-        self.acc = np.zeros(2, dtype=np.float64)
+        self.pos = np.array([float(x), float(y), float(z)], dtype=np.float64)
+        self.vel = np.array([float(vx), float(vy), float(vz)], dtype=np.float64)
+        self.acc = np.zeros(3, dtype=np.float64)
         self.fixed = fixed
         self.color = color
         self.radius_pixels = max(1, int(radius))
@@ -42,6 +43,7 @@ class Body:
 
     @staticmethod
     def from_meters(mass, x_m, y_m, vx_m_s, vy_m_s, color, radius,
+                    z_m=0.0, vz_m_s=0.0,
                     max_trail_length=C.DEFAULT_TRAIL_LENGTH, fixed=False,
                     name=None, show_trail=True):
         """Create a body using metre based coordinates.
@@ -57,6 +59,8 @@ class Body:
             vy_m_s,
             color,
             radius,
+            z=z_m / C.SPACE_SCALE,
+            vz=vz_m_s,
             max_trail_length=max_trail_length,
             fixed=fixed,
             name=name,
@@ -65,15 +69,19 @@ class Body:
 
     def update_physics_state(self, new_pos_sim, new_vel_m_s):
         if not self.fixed:
-            self.pos = new_pos_sim
-            self.vel = new_vel_m_s
+            self.pos = np.asarray(new_pos_sim, dtype=float)
+            if self.pos.size == 2:
+                self.pos = np.append(self.pos, 0.0)
+            self.vel = np.asarray(new_vel_m_s, dtype=float)
+            if self.vel.size == 2:
+                self.vel = np.append(self.vel, 0.0)
 
     def update_trail(self, zoom, pan_offset):
         if not self.show_trail or not self.visible:
             if len(self.trail) > 0:
                 self.trail.clear()
             return
-        screen_pos = self.pos * zoom + pan_offset
+        screen_pos = self.pos[:2] * zoom + pan_offset
         self.last_screen_pos = screen_pos
         self.trail.append(screen_pos.copy())
 
@@ -158,16 +166,16 @@ class Body:
                 pass
 
     def get_screen_pos(self, zoom, pan_offset):
-        screen_pos = self.pos * zoom + pan_offset
+        screen_pos = self.pos[:2] * zoom + pan_offset
         return (int(screen_pos[0]), int(screen_pos[1]))
 
     def handle_boundary_collision(self, bounds_sim, elasticity=0.8):
         if self.fixed:
             return
-        new_pos, new_vel = apply_boundary_conditions_jit(self.pos, self.vel, bounds_sim, elasticity)
-        if not np.array_equal(new_pos, self.pos) or not np.array_equal(new_vel, self.vel):
-            self.pos = new_pos
-            self.vel = new_vel
+        new_pos, new_vel = apply_boundary_conditions_jit(self.pos[:2], self.vel[:2], bounds_sim, elasticity)
+        if not np.array_equal(new_pos, self.pos[:2]) or not np.array_equal(new_vel, self.vel[:2]):
+            self.pos[:2] = new_pos
+            self.vel[:2] = new_vel
 
 
 def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):

@@ -10,11 +10,12 @@ def test_accelerations_fixed_body():
     b_free = Body(1.0, [1.0, 0.0], [0.0, 0.0])
     acc = accelerations([b_fixed, b_free], g_constant=1.0)
     # fixed body should have zero acceleration
-    assert np.allclose(acc[0], [0.0, 0.0])
+    assert np.allclose(acc[0], [0.0, 0.0, 0.0])
     # expected acceleration on free body towards the fixed body
     expected = -1.0 / (SPACE_SCALE ** 2 + 1.0)
     assert math.isclose(acc[1][0], expected, rel_tol=1e-12)
     assert math.isclose(acc[1][1], 0.0, abs_tol=1e-12)
+    assert math.isclose(acc[1][2], 0.0, abs_tol=1e-12)
 
 
 def test_accelerations_zero_distance():
@@ -22,8 +23,8 @@ def test_accelerations_zero_distance():
     b2 = Body(2.0, [0.0, 0.0], [0.0, 0.0])
     acc = accelerations([b1, b2], g_constant=1.0)
     # zero distance should result in zero acceleration due to skip
-    assert np.allclose(acc[0], [0.0, 0.0])
-    assert np.allclose(acc[1], [0.0, 0.0])
+    assert np.allclose(acc[0], [0.0, 0.0, 0.0])
+    assert np.allclose(acc[1], [0.0, 0.0, 0.0])
 
 
 def test_rk4_step_keeps_fixed_body_static():
@@ -31,8 +32,8 @@ def test_rk4_step_keeps_fixed_body_static():
     mover = Body(1.0, [1.0, 0.0], [0.0, 1.0])
     bodies = [fixed, mover]
     perform_rk4_step(bodies, dt=1.0, g_constant=0.0)
-    assert np.allclose(fixed.pos, [0.0, 0.0])
-    assert np.allclose(fixed.vel, [0.0, 0.0])
+    assert np.allclose(fixed.pos, [0.0, 0.0, 0.0])
+    assert np.allclose(fixed.vel, [0.0, 0.0, 0.0])
 
 
 def test_rk4_step_zero_distance():
