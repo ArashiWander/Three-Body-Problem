@@ -39,7 +39,7 @@ from .constants import *
 from . import constants as C
 from . import __version__
 from .utils import mass_to_display, distance_to_display, time_to_display
-from .presets import PRESETS
+from .presets import PRESETS, PRESET_SOFTENING_LENGTHS
 from .rendering import Body, render_gravitational_field
 from .physics_utils import calculate_center_of_mass, perform_rk4_step, adaptive_rk4_step, detect_and_handle_collisions, get_world_bounds_sim
 

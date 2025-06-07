@@ -160,10 +160,19 @@ def rk4_step_arrays(
     def deriv(pos: np.ndarray, vel: np.ndarray) -> np.ndarray:
         return compute_accelerations(pos, masses, fixed_mask, g_constant)
 
-    if positions.shape[1] == 2:
-        positions = np.hstack([positions, np.zeros((len(masses), 1), dtype=positions.dtype)])
-    if velocities.shape[1] == 2:
-        velocities = np.hstack([velocities, np.zeros((len(masses), 1), dtype=velocities.dtype)])
+    orig_pos_dim = positions.shape[1]
+    orig_vel_dim = velocities.shape[1]
+
+    if orig_pos_dim == 2:
+        positions = np.hstack([
+            positions,
+            np.zeros((len(masses), 1), dtype=positions.dtype),
+        ])
+    if orig_vel_dim == 2:
+        velocities = np.hstack([
+            velocities,
+            np.zeros((len(masses), 1), dtype=velocities.dtype),
+        ])
 
     k1a = deriv(positions, velocities)
     k1v = dt * k1a
@@ -195,7 +204,7 @@ def rk4_step_arrays(
         new_pos[i] += (k1p[i] + 2 * k2p[i] + 2 * k3p[i] + k4p[i]) / 6.0
         new_vel[i] += (k1v[i] + 2 * k2v[i] + 2 * k3v[i] + k4v[i]) / 6.0
 
-    return new_pos, new_vel
+    return new_pos[:, :orig_pos_dim], new_vel[:, :orig_vel_dim]
 
 
 def rk4_step_bodies(bodies, dt: float, g_constant: float = C.G_REAL) -> None:
