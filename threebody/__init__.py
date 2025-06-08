@@ -4,7 +4,13 @@ from importlib.metadata import PackageNotFoundError, version
 
 from .physics import Body, perform_rk4_step, system_energy
 from .integrators import compute_accelerations
-from .constants import G_REAL, SPACE_SCALE, SOFTENING_LENGTH, SOFTENING_FACTOR_SQ
+from .constants import (
+    G_REAL,
+    SPACE_SCALE,
+    SOFTENING_LENGTH,
+    SOFTENING_FACTOR_SQ,
+    C_LIGHT,
+)
 
 try:
     __version__ = version("threebody")
@@ -21,5 +27,6 @@ __all__ = [
     "SPACE_SCALE",
     "SOFTENING_LENGTH",
     "SOFTENING_FACTOR_SQ",
+    "C_LIGHT",
     "__version__",
 ]
