@@ -1,6 +1,6 @@
 import numpy as np
 from . import constants as C
-from .integrators import rk4_step_arrays, leapfrog_step_arrays
+from .integrators import rk4_step_arrays, leapfrog_step_arrays, symplectic4_step_arrays
 from .physics import Body as PhysicsBody
 from .jit import apply_boundary_conditions_jit
 
@@ -104,6 +104,17 @@ def step_simulation(
 
     if integrator_type == 'RK4':
         new_pos, new_vel = rk4_step_arrays(
+            positions,
+            velocities,
+            masses,
+            fixed_mask,
+            dt,
+            g_constant,
+            use_gr,
+            use_gpu=use_gpu,
+        )
+    elif integrator_type == 'Symplectic4':
+        new_pos, new_vel = symplectic4_step_arrays(
             positions,
             velocities,
             masses,

@@ -70,6 +70,8 @@ from threebody import Body, perform_rk4_step, compute_accelerations, system_ener
 `compute_accelerations` operates directly on NumPy arrays and is shared by both
 the lightweight `threebody.physics` module and the interactive simulation.  Set
 ``use_gpu=True`` to offload the force calculation with CuPy when available.
+When ``use_gr=True`` the routine applies first post‑Newtonian corrections to
+model relativistic perihelion precession.
 `perform_rk4_step` advances bodies using a Runge–Kutta 4th order integrator.
 
 The interactive application uses a richer `Body` implementation found in
@@ -111,9 +113,10 @@ Three integrators are provided:
 * **Adaptive RK4** via :py:meth:`threebody.physics_utils.adaptive_rk4_step` –
   automatically adjusts the time step to keep the estimated local error below
   ``ERROR_TOLERANCE``.
-* **Symplectic Leapfrog** – a new energy conserving integrator available from
-  ``threebody.integrators``. It is particularly suited to long term orbital
-  integrations.
+* **Symplectic Leapfrog** – a second‑order energy conserving method available
+  from ``threebody.integrators``.
+* **Fourth‑Order Symplectic** via ``symplectic4_step_arrays`` – based on the
+  Forest–Ruth scheme for long term orbital integrations.
 
 These are standard explicit methods as described in
 [Hairer et&nbsp;al.](https://doi.org/10.1007/978-3-642-05415-1) and
@@ -186,10 +189,12 @@ values include:
 
 ## Simulation Accuracy
 
-Both integrators are fourth‑order Runge–Kutta schemes which provide good
-accuracy for moderate step sizes.  Unit tests integrate the Earth–Sun system for
-30 days and verify that total energy is conserved to within 0.1%, confirming the
-stability of the default parameters.
+The default leapfrog solver is second order while ``symplectic4_step_arrays``
+and ``perform_rk4_step`` are fourth order. Unit tests integrate the Earth–Sun
+system for 30 days and verify that total energy is conserved to within 0.1%,
+confirming the stability of the default parameters. When enabled, general
+relativity corrections approximate Schwarzschild precession at the
+first post‑Newtonian order.
 
 Gravitational forces follow Newton's law with a small softening term to avoid
 singularities.  Numerical errors will grow over time, so reducing the time step
