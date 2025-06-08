@@ -4,6 +4,81 @@ from .integrators import rk4_step_arrays, leapfrog_step_arrays
 from .physics import Body as PhysicsBody
 from .jit import apply_boundary_conditions_jit
 
+
+class _QuadTree:
+    """Simple 2-D quadtree for fast neighbourhood queries."""
+
+    __slots__ = (
+        "bounds",
+        "depth",
+        "capacity",
+        "max_depth",
+        "points",
+        "children",
+    )
+
+    def __init__(self, bounds, depth=0, capacity=8, max_depth=10):
+        self.bounds = bounds  # (xmin, ymin, xmax, ymax)
+        self.depth = depth
+        self.capacity = capacity
+        self.max_depth = max_depth
+        self.points = []  # list of (index, (x,y))
+        self.children = None
+
+    def _subdivide(self):
+        x0, y0, x1, y1 = self.bounds
+        hx = (x0 + x1) / 2
+        hy = (y0 + y1) / 2
+        self.children = [
+            _QuadTree((x0, y0, hx, hy), self.depth + 1, self.capacity, self.max_depth),
+            _QuadTree((hx, y0, x1, hy), self.depth + 1, self.capacity, self.max_depth),
+            _QuadTree((x0, hy, hx, y1), self.depth + 1, self.capacity, self.max_depth),
+            _QuadTree((hx, hy, x1, y1), self.depth + 1, self.capacity, self.max_depth),
+        ]
+
+    def _insert_into_children(self, idx, point):
+        for child in self.children:
+            if child._contains(point):
+                child.insert(idx, point)
+                return
+        # Fallback if point lies on boundary due to precision errors
+        self.children[0].insert(idx, point)
+
+    def _contains(self, point):
+        x0, y0, x1, y1 = self.bounds
+        x, y = point
+        return x0 <= x <= x1 and y0 <= y <= y1
+
+    def insert(self, idx, point):
+        if self.children is not None:
+            self._insert_into_children(idx, point)
+            return
+        self.points.append((idx, point))
+        if len(self.points) > self.capacity and self.depth < self.max_depth:
+            self._subdivide()
+            for i, p in self.points:
+                self._insert_into_children(i, p)
+            self.points.clear()
+
+    def _intersects(self, region):
+        x0, y0, x1, y1 = self.bounds
+        rx0, ry0, rx1, ry1 = region
+        return not (rx1 < x0 or rx0 > x1 or ry1 < y0 or ry0 > y1)
+
+    def query(self, region, out=None):
+        if out is None:
+            out = []
+        if not self._intersects(region):
+            return out
+        x0, y0, x1, y1 = region
+        for idx, (x, y) in self.points:
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                out.append(idx)
+        if self.children is not None:
+            for child in self.children:
+                child.query(region, out)
+        return out
+
 def step_simulation(
     bodies,
     dt,
@@ -198,11 +273,12 @@ def adaptive_rk4_step(
 def detect_and_handle_collisions(bodies, merge_on_collision=False):
     """检测并处理天体之间的碰撞。"""
     num_bodies = len(bodies)
-    if num_bodies < 2: return []
+    if num_bodies < 2:
+        return []
 
-    collided_pairs = set()
-    indices_to_remove = []
-    
+    collided_pairs: set[tuple[int, int]] = set()
+    indices_to_remove: list[int] = []
+
     earth_radius_sim = C.EARTH_RADIUS_METERS / C.SPACE_SCALE
     physical_radii_sim = []
     for body in bodies:
@@ -210,66 +286,99 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
             radius_sim = 0.001 * earth_radius_sim
         else:
             mass_ratio = body.mass / C.EARTH_MASS
-            radius_sim = earth_radius_sim * (mass_ratio ** (1/3))
+            radius_sim = earth_radius_sim * (mass_ratio ** (1 / 3))
         radius_sim *= C.COLLISION_DISTANCE_FACTOR
         physical_radii_sim.append(max(radius_sim, 0.001 * earth_radius_sim))
-        
-    for i in range(num_bodies):
-        if i in indices_to_remove: continue
-        for j in range(i + 1, num_bodies):
-            if j in indices_to_remove: continue
-            
-            body1, body2 = bodies[i], bodies[j]
-            radius1_sim, radius2_sim = physical_radii_sim[i], physical_radii_sim[j]
-            
-            distance_vec_sim = body2.pos - body1.pos
-            dist_sq_sim = np.dot(distance_vec_sim, distance_vec_sim)
 
+    # Build quadtree using 2D positions
+    positions_2d = np.array([b.pos[:2] for b in bodies], dtype=float)
+    xmin, ymin = positions_2d.min(axis=0)
+    xmax, ymax = positions_2d.max(axis=0)
+    pad = 1e-9
+    root = _QuadTree((xmin - pad, ymin - pad, xmax + pad, ymax + pad))
+    for idx, pt in enumerate(positions_2d):
+        root.insert(idx, tuple(pt))
+
+    max_radius = max(physical_radii_sim)
+
+    for i in range(num_bodies):
+        if i in indices_to_remove:
+            continue
+        body1 = bodies[i]
+        radius1_sim = physical_radii_sim[i]
+        query_radius = radius1_sim + max_radius
+        region = (
+            positions_2d[i, 0] - query_radius,
+            positions_2d[i, 1] - query_radius,
+            positions_2d[i, 0] + query_radius,
+            positions_2d[i, 1] + query_radius,
+        )
+        candidates = root.query(region)
+        for j in candidates:
+            if j <= i or j in indices_to_remove:
+                continue
+            pair = tuple(sorted((i, j)))
+            if pair in collided_pairs:
+                continue
+
+            body2 = bodies[j]
+            radius2_sim = physical_radii_sim[j]
+            distance_vec_sim = body2.pos - body1.pos
+            dist_sq_sim = float(np.dot(distance_vec_sim, distance_vec_sim))
             collision_threshold_sq = (radius1_sim + radius2_sim) ** 2
 
             if dist_sq_sim < collision_threshold_sq and dist_sq_sim > 1e-18:
-                pair = tuple(sorted((i, j)))
-                if pair in collided_pairs: continue
-                
-                dist_sim = np.sqrt(dist_sq_sim)
-                
+                dist_sim = float(np.sqrt(dist_sq_sim))
+
                 if merge_on_collision:
-                    if body1.fixed or body2.fixed: continue
-                    
-                    survivor, removed = (body1, body2) if body1.mass >= body2.mass else (body2, body1)
+                    if body1.fixed or body2.fixed:
+                        continue
+
+                    survivor, removed = (
+                        (body1, body2) if body1.mass >= body2.mass else (body2, body1)
+                    )
                     removed_idx = j if body1.mass >= body2.mass else i
 
                     total_mass = survivor.mass + removed.mass
-                    if total_mass == 0: continue
+                    if total_mass == 0:
+                        continue
 
-                    new_vel = (survivor.mass * survivor.vel + removed.mass * removed.vel) / total_mass
-                    new_pos = (survivor.mass * survivor.pos + removed.mass * removed.pos) / total_mass
-                    
+                    new_vel = (
+                        survivor.mass * survivor.vel + removed.mass * removed.vel
+                    ) / total_mass
+                    new_pos = (
+                        survivor.mass * survivor.pos + removed.mass * removed.pos
+                    ) / total_mass
+
                     survivor.mass = total_mass
                     survivor.pos = new_pos
                     survivor.vel = new_vel
-                    
-                    if hasattr(survivor, 'radius_pixels'):
-                        survivor.radius_pixels = (body1.radius_pixels ** 3 + body2.radius_pixels ** 3) ** (1/3)
-                    if hasattr(survivor, 'name'):
+
+                    if hasattr(survivor, "radius_pixels"):
+                        survivor.radius_pixels = (
+                            body1.radius_pixels ** 3 + body2.radius_pixels ** 3
+                        ) ** (1 / 3)
+                    if hasattr(survivor, "name"):
                         survivor.name += f"+{removed.name}"
-                    if hasattr(survivor, 'clear_trail'):
+                    if hasattr(survivor, "clear_trail"):
                         survivor.clear_trail()
 
                     if removed_idx not in indices_to_remove:
                         indices_to_remove.append(removed_idx)
                     collided_pairs.add(pair)
-                else: # Bounce logic
-                    if body1.fixed and body2.fixed: continue
-                    
+                else:  # Bounce logic
+                    if body1.fixed and body2.fixed:
+                        continue
+
                     normal_sim = distance_vec_sim / dist_sim
                     rel_vel = body2.vel - body1.vel
-                    vel_along_normal = np.dot(rel_vel, normal_sim)
+                    vel_along_normal = float(np.dot(rel_vel, normal_sim))
 
-                    if vel_along_normal > 0: continue
+                    if vel_along_normal > 0:
+                        continue
 
-                    cor = 0.7 # 恢复系数
-                    
+                    cor = 0.7  # 恢复系数
+
                     if body1.fixed:
                         impulse = -(1 + cor) * vel_along_normal * body2.mass
                         body2.vel += (impulse / body2.mass) * normal_sim
@@ -278,7 +387,7 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
                         body1.vel -= (impulse / body1.mass) * normal_sim
                     else:
                         if body1.mass > 0 and body2.mass > 0:
-                            inv_mass_sum = 1/body1.mass + 1/body2.mass
+                            inv_mass_sum = 1 / body1.mass + 1 / body2.mass
                             impulse = -(1 + cor) * vel_along_normal / inv_mass_sum
                             body1.vel -= (impulse / body1.mass) * normal_sim
                             body2.vel += (impulse / body2.mass) * normal_sim
@@ -295,9 +404,13 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
                         else:
                             total_mass = body1.mass + body2.mass
                             if total_mass > 0:
-                                body1.pos -= correction_vec * (body2.mass / total_mass) * 2
-                                body2.pos += correction_vec * (body1.mass / total_mass) * 2
-                    
+                                body1.pos -= (
+                                    correction_vec * (body2.mass / total_mass) * 2
+                                )
+                                body2.pos += (
+                                    correction_vec * (body1.mass / total_mass) * 2
+                                )
+
                     collided_pairs.add(pair)
 
     return sorted(indices_to_remove, reverse=True)
