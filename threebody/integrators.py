@@ -36,7 +36,7 @@ def compute_accelerations(
     n = len(masses)
     if n == 0:
         # 确保返回与输入形状匹配的空数组
-        return xp.zeros_like(positions, dtype=float)
+        return xp.zeros_like(positions, dtype=xp.float64)
 
     # 确保位置和速度是3D的
     if positions.shape[1] == 2:
@@ -55,7 +55,7 @@ def compute_accelerations(
     else:
         velocities_3d = velocities
 
-    acc = xp.zeros_like(positions_3d, dtype=float)
+    acc = xp.zeros_like(positions_3d, dtype=xp.float64)
     scale_sq = C.SPACE_SCALE ** 2
 
     for i in range(n):
