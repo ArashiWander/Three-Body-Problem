@@ -27,7 +27,9 @@ def main():
     screen = pygame.display.set_mode((C.WIDTH, C.HEIGHT))
     pygame.display.set_caption("Three Body Simulation")
 
-    bodies = _create_bodies("Empty")
+    bodies = _create_bodies("Sun & Earth")
+    zoom = C.ZOOM_BASE
+    pan_offset = C.INITIAL_PAN_OFFSET
     clock = pygame.time.Clock()
     running = True
     while running:
@@ -37,7 +39,10 @@ def main():
         step_simulation(bodies, C.TIME_STEP_BASE, C.G_REAL, integrator_type="RK4")
         screen.fill(C.BLACK)
         for b in bodies:
-            pass
+            if hasattr(b, "update_trail"):
+                b.update_trail(zoom, pan_offset)
+            if hasattr(b, "draw"):
+                b.draw(screen, zoom, pan_offset, draw_labels=False)
         pygame.display.flip()
         clock.tick(60)
 
