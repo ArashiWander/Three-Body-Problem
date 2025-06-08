@@ -44,6 +44,7 @@ def compute_accelerations(
             positions,
             xp.zeros((n, 1), dtype=positions.dtype),
         ])
+ 
     else:
         positions_3d = positions
 
