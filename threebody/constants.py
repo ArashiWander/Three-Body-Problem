@@ -58,7 +58,8 @@ MAX_TIME_STEP = 3600
 FIELD_RESOLUTION = 30
 SHOW_GRAV_FIELD = False
 SHOW_TRAILS = True
-ZOOM_BASE = 1.0 / (AU / 500)
+# Default zoom so that one astronomical unit spans roughly 500 pixels
+ZOOM_BASE = 500 * SPACE_SCALE / AU
 INITIAL_PAN_OFFSET = np.array(
     [(WIDTH - UI_SIDEBAR_WIDTH) / 2, (HEIGHT - UI_BOTTOM_HEIGHT) / 2], dtype=np.float64
 )
