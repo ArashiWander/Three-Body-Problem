@@ -1,224 +1,140 @@
-from __future__ import annotations
-
 import numpy as np
-
 from . import constants as C
-
-try:  # optional GPU acceleration
-    import cupy as cp  # type: ignore
-
-    try:
-        cp.cuda.runtime.getDeviceCount()
-        _CUPY_GPU_AVAILABLE = True
-    except Exception:  # pragma: no cover - no GPU available
-        _CUPY_GPU_AVAILABLE = False
-except Exception:  # pragma: no cover - CuPy not installed
-    cp = None  # type: ignore
-    _CUPY_GPU_AVAILABLE = False
-
 
 def compute_accelerations(
     positions: np.ndarray,
     masses: np.ndarray,
     fixed_mask: np.ndarray,
     g_constant: float = C.G_REAL,
+    use_gr_correction: bool = False,
+    velocities: np.ndarray = None # GR修正需要速度
 ) -> np.ndarray:
-    """Return accelerations for each body.
-
-    Parameters
-    ----------
-    positions : (N, 3) array
-        Current positions in simulation units. 2-D arrays are also accepted and
-        treated as lying in the ``z=0`` plane.
-    masses : (N,) array
-        Body masses.
-    fixed_mask : (N,) boolean array
-        True for bodies that should not move.
-    g_constant : float, optional
-        Gravitational constant to use.
-
-    Returns
-    -------
-    ndarray
-        Accelerations in metres per second squared with the same dimensionality
-        as ``positions``.
-
-    Notes
-    -----
-    If CuPy is installed and a CUDA-capable GPU is detected, the computation
-    runs on the GPU automatically. If GPU acceleration is unavailable or any
-    error occurs, the function falls back to the CPU implementation.
-    """
-
-    if _CUPY_GPU_AVAILABLE:
-        try:  # pragma: no cover - GPU path not tested without hardware
-            return _compute_accelerations_gpu(
-                positions, masses, fixed_mask, g_constant
-            )
-        except Exception:
-            pass
-
-    return _compute_accelerations_cpu(
-        positions, masses, fixed_mask, g_constant
-    )
-
-
-def _compute_accelerations_cpu(
-    positions: np.ndarray,
-    masses: np.ndarray,
-    fixed_mask: np.ndarray,
-    g_constant: float,
-) -> np.ndarray:
-    """Compute accelerations on the CPU using symmetric pair updates."""
-
+    """计算每个天体的加速度，可选广义相对论修正。"""
     n = len(masses)
     if n == 0:
-        return np.zeros((0, positions.shape[1]), dtype=np.float64)
+        # 确保返回与输入形状匹配的空数组
+        return np.zeros_like(positions, dtype=np.float64)
 
-    orig_dim = positions.shape[1]
-    if orig_dim == 2:
-        positions = np.hstack([
-            positions,
-            np.zeros((n, 1), dtype=positions.dtype),
-        ])
-        dim = 3
+    # 确保位置和速度是3D的
+    if positions.shape[1] == 2:
+        positions_3d = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
     else:
-        dim = orig_dim
+        positions_3d = positions
+    
+    if velocities is not None and velocities.shape[1] == 2:
+        velocities_3d = np.hstack([velocities, np.zeros((n, 1), dtype=velocities.dtype)])
+    else:
+        velocities_3d = velocities
 
-    acc = np.zeros((n, dim), dtype=np.float64)
+    acc = np.zeros_like(positions_3d, dtype=np.float64)
     scale_sq = C.SPACE_SCALE ** 2
 
-    for i in range(n - 1):
-        for j in range(i + 1, n):
-            r_vec = positions[j] - positions[i]
-            dist_sq = float(np.dot(r_vec, r_vec))
-            if dist_sq == 0.0:
-                continue
-            dist_sq_m = dist_sq * scale_sq
-            inv_dist = 1.0 / np.sqrt(dist_sq)
-            factor = g_constant / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
-            acc_vec = r_vec * (inv_dist * factor)
-
-            if not fixed_mask[i]:
-                acc[i] += acc_vec * masses[j]
-            if not fixed_mask[j]:
-                acc[j] -= acc_vec * masses[i]
-
-    return acc[:, :orig_dim]
-
-
-def _compute_accelerations_gpu(
-    positions: np.ndarray,
-    masses: np.ndarray,
-    fixed_mask: np.ndarray,
-    g_constant: float,
-) -> np.ndarray:
-    pos_gpu = cp.asarray(positions, dtype=cp.float64)
-    masses_gpu = cp.asarray(masses, dtype=cp.float64)
-
-    n = len(masses)
-    if n == 0:
-        return np.zeros((0, positions.shape[1]), dtype=np.float64)
-
-    orig_dim = positions.shape[1]
-    if orig_dim == 2:
-        pos_gpu = cp.hstack([pos_gpu, cp.zeros((n, 1), dtype=pos_gpu.dtype)])
-        dim = 3
-    else:
-        dim = orig_dim
-
-    acc_gpu = cp.zeros((n, dim), dtype=cp.float64)
     for i in range(n):
         if fixed_mask[i]:
             continue
+            
+        # 为了提高效率，只计算对天体i的作用力
+        # 使用向量化计算与天体i的相对位置和距离
+        r_vecs = positions_3d - positions_3d[i]
+        dist_sq_sim = np.einsum('ij,ij->i', r_vecs, r_vecs)
 
-        r_vec = pos_gpu - pos_gpu[i]
-        dist_sq = cp.einsum("ij,ij->i", r_vec, r_vec)
-        dist_sq[i] = cp.inf
+        # 避免与自身计算
+        dist_sq_sim[i] = np.inf 
+        
+        # 计算牛顿引力
+        dist_sq_m = dist_sq_sim * scale_sq
+        # 使用 np.errstate 避免除零警告
+        with np.errstate(divide='ignore', invalid='ignore'):
+            inv_dist_m = 1.0 / np.sqrt(dist_sq_m)
+            # 软化因子
+            denominator = dist_sq_m + C.SOFTENING_FACTOR_SQ
+            factor = g_constant / denominator
+        
+        # 将无用的值（inf, nan）替换为0
+        factor[~np.isfinite(factor)] = 0.0
+        
+        # 方向向量
+        norm_r_vecs = r_vecs * (1.0 / np.sqrt(dist_sq_sim))[:, np.newaxis]
+        norm_r_vecs[~np.isfinite(norm_r_vecs)] = 0.0
+        
+        # 计算总牛顿加速度
+        newtonian_acc = np.sum(norm_r_vecs * (factor * masses)[:, np.newaxis], axis=0)
+        acc[i] += newtonian_acc
 
-        dist_sq_m = dist_sq * (C.SPACE_SCALE ** 2)
+        # 计算广义相对论修正
+        if use_gr_correction and velocities is not None:
+            v_vec_i = velocities_3d[i]
+            # 计算来自其他所有天体j的GR修正
+            for j in range(n):
+                if i == j: continue
+                
+                GM = g_constant * masses[j]
+                r_vec_m = r_vecs[j] * C.SPACE_SCALE
+                r_m_sq = dist_sq_m[j]
+                
+                if r_m_sq == 0: continue
 
-        inv_dist = cp.where(dist_sq > 0.0, 1.0 / cp.sqrt(dist_sq), 0.0)
+                r_m = np.sqrt(r_m_sq)
+                c_sq = C.C_LIGHT ** 2
+                
+                # 计算角动量 L = r x v
+                L_vec = np.cross(r_vec_m, v_vec_i)
+                L_sq = np.dot(L_vec, L_vec)
+                
+                # 进动项 F_gr = - (3 * G * M * L^2) / (c^2 * r^4) * r_hat
+                gr_acc_mag = (3 * GM * L_sq) / (r_m**4 * c_sq)
+                
+                gr_acc_vec = -gr_acc_mag * (r_vecs[j] / np.sqrt(dist_sq_sim[j]))
+                acc[i] += gr_acc_vec
 
-        factors = g_constant * masses_gpu / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
-
-        acc_gpu[i] = cp.sum(r_vec * (inv_dist[:, None] * factors[:, None]), axis=0)
-
-    return cp.asnumpy(acc_gpu)[:, :orig_dim]
-
+    return acc[:, :positions.shape[1]] # 返回与输入维度一致的加速度
 
 def rk4_step_arrays(
-    positions: np.ndarray,
-    velocities: np.ndarray,
-    masses: np.ndarray,
-    fixed_mask: np.ndarray,
-    dt: float,
-    g_constant: float = C.G_REAL,
+    positions, velocities, masses, fixed_mask, dt, g_constant, use_gr=False
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Advance bodies using an RK4 step operating on arrays."""
+    """使用RK4积分器。"""
+    
+    def deriv(pos, vel):
+        return compute_accelerations(pos, masses, fixed_mask, g_constant, use_gr, vel)
 
-    def deriv(pos: np.ndarray, vel: np.ndarray) -> np.ndarray:
-        return compute_accelerations(pos, masses, fixed_mask, g_constant)
+    k1_v = deriv(positions, velocities)
+    k1_p = velocities / C.SPACE_SCALE
+    
+    k2_v = deriv(positions + 0.5 * dt * k1_p, velocities + 0.5 * dt * k1_v)
+    k2_p = (velocities + 0.5 * dt * k1_v) / C.SPACE_SCALE
 
-    orig_pos_dim = positions.shape[1]
-    orig_vel_dim = velocities.shape[1]
+    k3_v = deriv(positions + 0.5 * dt * k2_p, velocities + 0.5 * dt * k2_v)
+    k3_p = (velocities + 0.5 * dt * k2_v) / C.SPACE_SCALE
 
-    if orig_pos_dim == 2:
-        positions = np.hstack([
-            positions,
-            np.zeros((len(masses), 1), dtype=positions.dtype),
-        ])
-    if orig_vel_dim == 2:
-        velocities = np.hstack([
-            velocities,
-            np.zeros((len(masses), 1), dtype=velocities.dtype),
-        ])
+    k4_v = deriv(positions + dt * k3_p, velocities + dt * k3_v)
+    k4_p = (velocities + dt * k3_v) / C.SPACE_SCALE
+    
+    pos_new = positions + (dt / 6.0) * (k1_p + 2*k2_p + 2*k3_p + k4_p)
+    vel_new = velocities + (dt / 6.0) * (k1_v + 2*k2_v + 2*k3_v + k4_v)
 
-    k1a = deriv(positions, velocities)
-    k1v = dt * k1a
-    k1p = dt * velocities / C.SPACE_SCALE
+    pos_new[fixed_mask] = positions[fixed_mask]
+    vel_new[fixed_mask] = velocities[fixed_mask]
 
-    pos_k2 = positions + 0.5 * k1p
-    vel_k2 = velocities + 0.5 * k1v
-    k2a = deriv(pos_k2, vel_k2)
-    k2v = dt * k2a
-    k2p = dt * (velocities + 0.5 * k1v) / C.SPACE_SCALE
+    return pos_new, vel_new
 
-    pos_k3 = positions + 0.5 * k2p
-    vel_k3 = velocities + 0.5 * k2v
-    k3a = deriv(pos_k3, vel_k3)
-    k3v = dt * k3a
-    k3p = dt * (velocities + 0.5 * k2v) / C.SPACE_SCALE
+def leapfrog_step_arrays(
+    positions, velocities, masses, fixed_mask, dt, g_constant, use_gr=False
+) -> tuple[np.ndarray, np.ndarray]:
+    """使用Leapfrog (kick-drift-kick)辛积分器推进模拟。"""
+    
+    # half kick
+    accel_initial = compute_accelerations(positions, masses, fixed_mask, g_constant, use_gr, velocities)
+    vel_half = velocities + accel_initial * (dt / 2.0)
 
-    pos_k4 = positions + k3p
-    vel_k4 = velocities + k3v
-    k4a = deriv(pos_k4, vel_k4)
-    k4v = dt * k4a
-    k4p = dt * (velocities + k3v) / C.SPACE_SCALE
+    # full drift
+    pos_new = positions + vel_half * dt / C.SPACE_SCALE
 
-    new_pos = positions.copy()
-    new_vel = velocities.copy()
-    for i in range(len(masses)):
-        if fixed_mask[i]:
-            continue
-        new_pos[i] += (k1p[i] + 2 * k2p[i] + 2 * k3p[i] + k4p[i]) / 6.0
-        new_vel[i] += (k1v[i] + 2 * k2v[i] + 2 * k3v[i] + k4v[i]) / 6.0
+    # half kick
+    accel_final = compute_accelerations(pos_new, masses, fixed_mask, g_constant, use_gr, vel_half)
+    vel_new = vel_half + accel_final * (dt / 2.0)
 
-    return new_pos[:, :orig_pos_dim], new_vel[:, :orig_vel_dim]
-
-
-def rk4_step_bodies(bodies, dt: float, g_constant: float = C.G_REAL) -> None:
-    """Integrate a list of body objects in place using RK4."""
-    positions = np.array([b.pos for b in bodies])
-    velocities = np.array([b.vel for b in bodies])
-    masses = np.array([b.mass for b in bodies])
-    fixed_mask = np.array([getattr(b, "fixed", False) for b in bodies])
-
-    new_pos, new_vel = rk4_step_arrays(
-        positions, velocities, masses, fixed_mask, dt, g_constant
-    )
-
-    for b, p, v, fixed in zip(bodies, new_pos, new_vel, fixed_mask):
-        if not fixed:
-            b.pos = p
-            b.vel = v
+    # 将固定天体的位置和速度重置
+    pos_new[fixed_mask] = positions[fixed_mask]
+    vel_new[fixed_mask] = velocities[fixed_mask]
+    
+    return pos_new, vel_new
