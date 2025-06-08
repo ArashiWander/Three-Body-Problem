@@ -80,7 +80,7 @@ def main(argv=None):
         manager,
         integrator=args.integrator,
         adaptive=args.adaptive,
-        use_gr=args.gr,
+        use_gr=args.use_gr,
         show_field=args.show_field,
     )
     camera = Camera()                                              # From main branch (for camera control)
