@@ -37,6 +37,8 @@ Start the interactive application with:
 
 ```bash
 python -m threebody.simulation_full
+# or launch via the installed script
+threebody-sim
 ```
 
 Use `--softening-length` to override the gravitational softening length in

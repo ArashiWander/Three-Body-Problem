@@ -16,3 +16,6 @@ dependencies = [
     "pygame_gui",
     "jplephem",
 ]
+
+[project.scripts]
+threebody-sim = "threebody.simulation_full:main"
