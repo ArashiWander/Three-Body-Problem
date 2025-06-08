@@ -47,19 +47,17 @@ metres when launching the simulation.
 
 ### Quick Start
 
-After launching you will see a control panel on the left. To get moving quickly:
+Launch the simulator to open a window showing the current system.  Useful
+keyboard commands are:
 
-1. Pick a preset from the **Preset** drop‑down (for example *Sun & Earth*).
-2. Press **SPACE** to pause or resume the motion.
-3. Drag with the **right mouse button** to create a new body – the drag
+1. Press **SPACE** to pause or resume the motion.
+2. Drag with the **right mouse button** to create a new body – the drag
    direction sets its starting velocity.
-4. Use the **Speed** and **Gravity** sliders to tune the simulation.
-5. Press **H** or click **Help / Controls** at any time for a full list of
-   shortcuts.
+3. Press **H** to toggle the on‑screen help listing all shortcuts.
 
-The Pygame GUI lets you load presets, add new bodies and tweak the simulation
-speed or gravitational constant.  Keyboard shortcuts are listed in the in-app
-help window.
+Additional systems can be loaded using the ``--preset`` command line option
+(for example ``--preset "Sun & Earth"``).  The ``--show-field`` flag visualises
+the gravitational field.
 
 ## Library Usage
 
@@ -147,6 +145,8 @@ Alternatively, call :py:meth:`Body.from_meters` to create a body using SI
 coordinates directly. The helper converts the position for you so the resulting
 objects interact as expected.  This is important because the gravitational
 constant ``G_REAL`` bundled with the library is expressed in SI units.
+Its value of ``6.67430e-11`` m³ kg⁻¹ s⁻² is defined in
+``threebody.constants`` and used for all gravitational calculations.
 
 ## Adjusting Body Trails
 
