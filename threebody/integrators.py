@@ -86,28 +86,21 @@ def compute_accelerations(
         # 计算广义相对论修正
         if use_gr_correction and velocities is not None:
             v_vec_i = velocities_3d[i]
-            # 计算来自其他所有天体j的GR修正
-            for j in range(n):
-                if i == j: continue
-                
-                GM = g_constant * masses[j]
-                r_vec_m = r_vecs[j] * C.SPACE_SCALE
-                r_m_sq = dist_sq_m[j]
-                
-                if r_m_sq == 0: continue
+            r_vecs_m = r_vecs * C.SPACE_SCALE
+            L_vecs = xp.cross(r_vecs_m, v_vec_i)
+            L_sq = xp.einsum("ij,ij->i", L_vecs, L_vecs)
+            r_m_sq = dist_sq_m
+            r_hat = norm_r_vecs
 
-                r_m = xp.sqrt(r_m_sq)
-                c_sq = C.C_LIGHT ** 2
-                
-                # 计算角动量 L = r x v
-                L_vec = xp.cross(r_vec_m, v_vec_i)
-                L_sq = xp.dot(L_vec, L_vec)
-                
-                # 进动项 F_gr = - (3 * G * M * L^2) / (c^2 * r^4) * r_hat
-                gr_acc_mag = (3 * GM * L_sq) / (r_m**4 * c_sq)
-
-                gr_acc_vec = -gr_acc_mag * (r_vecs[j] / xp.sqrt(dist_sq_sim[j]))
-                acc[i] += gr_acc_vec
+            mask = xp.arange(n) != i
+            with xp.errstate(divide="ignore", invalid="ignore"):
+                gr_factors = -3.0 * g_constant * masses * L_sq / (
+                    (C.C_LIGHT ** 2) * (r_m_sq ** 2)
+                )
+            gr_factors[~mask] = 0.0
+            gr_factors[~xp.isfinite(gr_factors)] = 0.0
+            gr_acc = gr_factors[:, xp.newaxis] * r_hat
+            acc[i] += xp.sum(gr_acc, axis=0)
 
     acc = acc[:, :positions.shape[1]]  # 返回与输入维度一致的加速度
     if use_gpu:
@@ -183,5 +176,53 @@ def leapfrog_step_arrays(
     # 将固定天体的位置和速度重置
     pos_new[fixed_mask] = positions[fixed_mask]
     vel_new[fixed_mask] = velocities[fixed_mask]
-    
+
     return pos_new, vel_new
+
+
+def symplectic4_step_arrays(
+    positions,
+    velocities,
+    masses,
+    fixed_mask,
+    dt,
+    g_constant,
+    use_gr=False,
+    *,
+    use_gpu: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fourth-order symplectic integrator using Yoshida coefficients."""
+
+    a1 = 0.5153528374311229
+    a2 = -0.08578201941297365
+    a3 = 0.4415830236164665
+    a4 = 0.1288461583653842
+
+    b1 = 0.1344961992774311
+    b2 = -0.2248198030794208
+    b3 = 0.7562300005156683
+    b4 = 0.3340036032863214
+
+    pos = positions
+    vel = velocities
+
+    acc = compute_accelerations(pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu)
+    vel = vel + b1 * dt * acc
+    pos = pos + a1 * dt * vel / C.SPACE_SCALE
+
+    acc = compute_accelerations(pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu)
+    vel = vel + b2 * dt * acc
+    pos = pos + a2 * dt * vel / C.SPACE_SCALE
+
+    acc = compute_accelerations(pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu)
+    vel = vel + b3 * dt * acc
+    pos = pos + a3 * dt * vel / C.SPACE_SCALE
+
+    acc = compute_accelerations(pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu)
+    vel = vel + b4 * dt * acc
+    pos = pos + a4 * dt * vel / C.SPACE_SCALE
+
+    pos[fixed_mask] = positions[fixed_mask]
+    vel[fixed_mask] = velocities[fixed_mask]
+
+    return pos, vel

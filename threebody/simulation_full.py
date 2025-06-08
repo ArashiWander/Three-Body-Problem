@@ -40,7 +40,11 @@ def _create_bodies(preset_name: str, ephem=None, epoch=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Three Body Simulation")
     parser.add_argument("--preset", default="Sun & Earth", help="Preset system")
-    parser.add_argument("--integrator", choices=["RK4", "Symplectic"], default="Symplectic")
+    parser.add_argument(
+        "--integrator",
+        choices=["RK4", "Symplectic", "Symplectic4"],
+        default="Symplectic",
+    )
     parser.add_argument("--adaptive", action="store_true", help="Use adaptive RK4")
     parser.add_argument("--use-gpu", action="store_true", help="Enable GPU acceleration")
     parser.add_argument("--gr", action="store_true", help="Use general relativity correction")
