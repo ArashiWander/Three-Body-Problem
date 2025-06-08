@@ -2,6 +2,9 @@
 
 from datetime import datetime
 from typing import Optional
+from pathlib import Path
+from urllib.request import urlopen
+import shutil
 
 import numpy as np
 from jplephem.spk import SPK
@@ -35,4 +38,53 @@ def create_body(
     """Create a :class:`Body` instance from ephemeris data."""
     pos, vel = body_state(ephem, target, epoch)
     return Body(mass, pos, vel, name=name or str(target))
+
+
+def download_ephemeris(url: str, dest: str | Path) -> Path:
+    """Download a JPL ephemeris BSP file.
+
+    Parameters
+    ----------
+    url:
+        HTTP(S) location of the BSP file.
+    dest:
+        Destination directory or full file path where the kernel will be
+        written. If ``dest`` is a directory, the filename is taken from
+        ``url``.
+
+    Returns
+    -------
+    Path
+        Path of the downloaded file.
+    """
+    dest_path = Path(dest)
+    if dest_path.is_dir():
+        dest_path = dest_path / Path(url).name
+
+    with urlopen(url) as resp, open(dest_path, "wb") as f:
+        shutil.copyfileobj(resp, f)
+
+    return dest_path.resolve()
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Command line entry point for downloading ephemerides."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Download a JPL ephemeris BSP file")
+    parser.add_argument("url", help="URL of the BSP file")
+    parser.add_argument(
+        "dest",
+        nargs="?",
+        default=".",
+        help="Destination directory or file path",
+    )
+    args = parser.parse_args(argv)
+
+    path = download_ephemeris(args.url, args.dest)
+    print(path)
+
+
+if __name__ == "__main__":  # pragma: no cover - manual tool
+    main()
 

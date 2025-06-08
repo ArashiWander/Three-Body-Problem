@@ -12,7 +12,7 @@ from .constants import (
     C_LIGHT,
 )
 
-from .nasa import load_ephemeris, body_state, create_body
+from .nasa import load_ephemeris, body_state, create_body, download_ephemeris
 try:
     __version__ = version("threebody")
 except PackageNotFoundError:
@@ -33,4 +33,5 @@ __all__ = [
     "load_ephemeris",
     "body_state",
     "create_body",
+    "download_ephemeris",
 ]

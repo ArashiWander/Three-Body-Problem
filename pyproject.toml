@@ -19,3 +19,4 @@ dependencies = [
 
 [project.scripts]
 threebody-sim = "threebody.simulation_full:main"
+threebody-download = "threebody.nasa:main"
