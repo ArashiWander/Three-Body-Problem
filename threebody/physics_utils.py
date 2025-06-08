@@ -170,7 +170,9 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
             distance_vec_sim = body2.pos - body1.pos
             dist_sq_sim = np.dot(distance_vec_sim, distance_vec_sim)
             
-            collision_threshold_sq = (radius1_sim + radius2_sim)**2
+            collision_threshold_sq = (
+                C.COLLISION_DISTANCE_FACTOR * (radius1_sim + radius2_sim)
+            ) ** 2
             
             if dist_sq_sim < collision_threshold_sq and dist_sq_sim > 1e-18:
                 pair = tuple(sorted((i, j)))
