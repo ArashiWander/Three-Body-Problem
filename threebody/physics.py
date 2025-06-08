@@ -43,6 +43,19 @@ class Body:
 
         self.fixed = fixed
 
+    def update_physics_state(self, new_pos_sim, new_vel_m_s):
+        """Update the body's position and velocity."""
+        if self.fixed:
+            return
+        p = np.asarray(new_pos_sim, dtype=float).reshape(-1)
+        if p.size < 3:
+            p = np.pad(p, (0, 3 - p.size))
+        v = np.asarray(new_vel_m_s, dtype=float).reshape(-1)
+        if v.size < 3:
+            v = np.pad(v, (0, 3 - v.size))
+        self.pos = p[:3]
+        self.vel = v[:3]
+
     def __repr__(self):
         return (
             f"Body(mass={self.mass}, pos={self.pos.tolist()}, "
