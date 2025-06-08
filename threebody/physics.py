@@ -55,6 +55,19 @@ class Body:
         pos_sim = np.asarray(pos_m, dtype=float) / SPACE_SCALE
         return Body(mass, pos_sim, vel_m_s, fixed=fixed)
 
+    def update_physics_state(self, new_pos_sim, new_vel_m_s):
+        """Update the body's position and velocity."""
+        if self.fixed:
+            return
+        p = np.asarray(new_pos_sim, dtype=float).reshape(-1)
+        if p.size < 3:
+            p = np.pad(p, (0, 3 - p.size))
+        self.pos = p[:3]
+        v = np.asarray(new_vel_m_s, dtype=float).reshape(-1)
+        if v.size < 3:
+            v = np.pad(v, (0, 3 - v.size))
+        self.vel = v[:3]
+
 
 def accelerations(bodies, g_constant=G_REAL):
     """Compute accelerations on each body."""
