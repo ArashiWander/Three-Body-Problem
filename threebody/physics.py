@@ -81,6 +81,16 @@ def accelerations(bodies, g_constant=G_REAL):
     return [acc_array[i] for i in range(len(bodies))]
 
 
+def forces(bodies, g_constant=G_REAL):
+    """Return gravitational force vectors acting on each body.
+
+    The force on body ``i`` is ``mass[i] * acceleration[i]`` where the
+    accelerations are computed using :func:`compute_accelerations`.
+    """
+    acc_list = accelerations(bodies, g_constant)
+    return [b.mass * acc for b, acc in zip(bodies, acc_list)]
+
+
 def perform_rk4_step(bodies, dt, g_constant=G_REAL):
     """Advance bodies using a single RK4 step."""
     if not bodies:

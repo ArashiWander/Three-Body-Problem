@@ -2,7 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .physics import Body, perform_rk4_step, system_energy
+from .physics import Body, perform_rk4_step, system_energy, forces
 from .integrators import compute_accelerations
 from .constants import (
     G_REAL,
@@ -24,6 +24,7 @@ __all__ = [
     "Body",
     "perform_rk4_step",
     "system_energy",
+    "forces",
     "compute_accelerations",
     "G_REAL",
     "SPACE_SCALE",
