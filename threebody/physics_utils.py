@@ -4,7 +4,15 @@ from .integrators import rk4_step_arrays, leapfrog_step_arrays
 from .physics import Body as PhysicsBody
 from .jit import apply_boundary_conditions_jit
 
-def step_simulation(bodies, dt, g_constant, integrator_type='Symplectic', use_gr=False):
+def step_simulation(
+    bodies,
+    dt,
+    g_constant,
+    integrator_type='Symplectic',
+    use_gr=False,
+    *,
+    use_gpu: bool = False,
+):
     """
     根据选择的积分器类型推进模拟。
 
@@ -20,9 +28,27 @@ def step_simulation(bodies, dt, g_constant, integrator_type='Symplectic', use_gr
     fixed_mask = np.array([b.fixed for b in bodies])
 
     if integrator_type == 'RK4':
-        new_pos, new_vel = rk4_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant, use_gr)
-    else: # 默认为 Symplectic (Leapfrog)
-        new_pos, new_vel = leapfrog_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant, use_gr)
+        new_pos, new_vel = rk4_step_arrays(
+            positions,
+            velocities,
+            masses,
+            fixed_mask,
+            dt,
+            g_constant,
+            use_gr,
+            use_gpu=use_gpu,
+        )
+    else:  # 默认为 Symplectic (Leapfrog)
+        new_pos, new_vel = leapfrog_step_arrays(
+            positions,
+            velocities,
+            masses,
+            fixed_mask,
+            dt,
+            g_constant,
+            use_gr,
+            use_gpu=use_gpu,
+        )
 
     for i, body in enumerate(bodies):
         if body.fixed:
@@ -82,7 +108,7 @@ def calculate_center_of_mass(bodies):
     com_vel_m_s = weighted_vel_sum / total_mass
     return com_pos_sim, com_vel_m_s
 
-def perform_rk4_step(bodies, dt, g_constant):
+def perform_rk4_step(bodies, dt, g_constant, *, use_gpu: bool = False):
     """对一组天体执行一个RK4步长。（为自适应步长提供的辅助函数）"""
     if not bodies:
         return np.array([]), np.array([])
@@ -93,10 +119,28 @@ def perform_rk4_step(bodies, dt, g_constant):
     fixed_mask = np.array([b.fixed for b in bodies])
 
     # 注意：这里的调用未使用GR修正，因为自适应步长主要用于牛顿力学
-    return rk4_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant, use_gr=False)
+    return rk4_step_arrays(
+        positions,
+        velocities,
+        masses,
+        fixed_mask,
+        dt,
+        g_constant,
+        use_gr=False,
+        use_gpu=use_gpu,
+    )
 
 
-def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_boundaries, bounds_sim):
+def adaptive_rk4_step(
+    bodies,
+    current_dt,
+    g_constant,
+    error_tolerance,
+    use_boundaries,
+    bounds_sim,
+    *,
+    use_gpu: bool = False,
+):
     """执行一个自适应RK4步长，并返回建议的下一个步长。"""
     if not bodies:
         return 0.0, current_dt
@@ -104,12 +148,12 @@ def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_bound
     dt = max(C.MIN_TIME_STEP, min(current_dt, C.MAX_TIME_STEP))
     
     # 执行一个完整步长
-    pos1, vel1 = perform_rk4_step(bodies, dt, g_constant)
+    pos1, vel1 = perform_rk4_step(bodies, dt, g_constant, use_gpu=use_gpu)
     
     # 执行两个半步长
-    pos_half, vel_half = perform_rk4_step(bodies, dt / 2.0, g_constant)
+    pos_half, vel_half = perform_rk4_step(bodies, dt / 2.0, g_constant, use_gpu=use_gpu)
     temp_bodies = [PhysicsBody(b.mass, pos_half[i], vel_half[i], fixed=b.fixed) for i, b in enumerate(bodies)]
-    pos2, vel2 = perform_rk4_step(temp_bodies, dt / 2.0, g_constant)
+    pos2, vel2 = perform_rk4_step(temp_bodies, dt / 2.0, g_constant, use_gpu=use_gpu)
     
     # 计算误差
     max_rel_error = 0.0

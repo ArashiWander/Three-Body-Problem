@@ -115,12 +115,22 @@ def compute_accelerations(
     return acc
 
 def rk4_step_arrays(
-    positions, velocities, masses, fixed_mask, dt, g_constant, use_gr=False
+    positions,
+    velocities,
+    masses,
+    fixed_mask,
+    dt,
+    g_constant,
+    use_gr=False,
+    *,
+    use_gpu: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """使用RK4积分器。"""
     
     def deriv(pos, vel):
-        return compute_accelerations(pos, masses, fixed_mask, g_constant, use_gr, vel)
+        return compute_accelerations(
+            pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu
+        )
 
     k1_v = deriv(positions, velocities)
     k1_p = velocities / C.SPACE_SCALE
@@ -143,19 +153,31 @@ def rk4_step_arrays(
     return pos_new, vel_new
 
 def leapfrog_step_arrays(
-    positions, velocities, masses, fixed_mask, dt, g_constant, use_gr=False
+    positions,
+    velocities,
+    masses,
+    fixed_mask,
+    dt,
+    g_constant,
+    use_gr=False,
+    *,
+    use_gpu: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """使用Leapfrog (kick-drift-kick)辛积分器推进模拟。"""
     
     # half kick
-    accel_initial = compute_accelerations(positions, masses, fixed_mask, g_constant, use_gr, velocities)
+    accel_initial = compute_accelerations(
+        positions, masses, fixed_mask, g_constant, use_gr, velocities, use_gpu=use_gpu
+    )
     vel_half = velocities + accel_initial * (dt / 2.0)
 
     # full drift
     pos_new = positions + vel_half * dt / C.SPACE_SCALE
 
     # half kick
-    accel_final = compute_accelerations(pos_new, masses, fixed_mask, g_constant, use_gr, vel_half)
+    accel_final = compute_accelerations(
+        pos_new, masses, fixed_mask, g_constant, use_gr, vel_half, use_gpu=use_gpu
+    )
     vel_new = vel_half + accel_final * (dt / 2.0)
 
     # 将固定天体的位置和速度重置
