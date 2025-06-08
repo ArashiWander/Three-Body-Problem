@@ -75,6 +75,25 @@ the lightweight `threebody.physics` module and the interactive simulation.
 The interactive application uses a richer `Body` implementation found in
 `threebody.rendering` which adds drawing and trail management utilities.
 
+## NASA Ephemerides
+
+High precision starting positions can be loaded from NASA JPL SPK files. Use the
+new helpers in ``threebody.nasa`` with a kernel such as ``de421.bsp``:
+
+```python
+from threebody import load_ephemeris, create_body
+from threebody.constants import EARTH_MASS, SOLAR_MASS
+from datetime import datetime
+
+ephem = load_ephemeris("de421.bsp")
+epoch = datetime(2024, 1, 1)
+sun = create_body(ephem, 10, epoch, SOLAR_MASS, name="Sun")
+earth = create_body(ephem, 399, epoch, EARTH_MASS, name="Earth")
+```
+
+The ``de421.bsp`` kernel can be downloaded from NASA archives or the
+[``python-jplephem`` repository](https://github.com/brandon-rhodes/python-jplephem/blob/master/de421.bsp).
+
 ## Integrator Choices
 
 Three integrators are provided:

@@ -12,6 +12,7 @@ from .constants import (
     C_LIGHT,
 )
 
+from .nasa import load_ephemeris, body_state, create_body
 try:
     __version__ = version("threebody")
 except PackageNotFoundError:
@@ -29,4 +30,7 @@ __all__ = [
     "SOFTENING_FACTOR_SQ",
     "C_LIGHT",
     "__version__",
+    "load_ephemeris",
+    "body_state",
+    "create_body",
 ]
