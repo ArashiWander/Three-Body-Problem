@@ -137,8 +137,9 @@ class Body:
                         pygame.draw.line(screen, self.color, start_pos, end_pos, 1)
                     except Exception:
                         pass
-        effective_zoom_scale = max(0.1, zoom ** C.BODY_ZOOM_SCALING_POWER)
-        draw_radius = max(3, int(self.radius_pixels * effective_zoom_scale))
+        effective_zoom_scale = zoom ** C.BODY_ZOOM_SCALING_POWER
+        # Prevent tiny values from rounding to zero so bodies remain visible
+        draw_radius = max(1, int(self.radius_pixels * effective_zoom_scale))
         if (draw_pos[0] + draw_radius < 0 or draw_pos[0] - draw_radius > sim_width_pixels or
                 draw_pos[1] + draw_radius < 0 or draw_pos[1] - draw_radius > sim_height_pixels):
             return
@@ -198,7 +199,9 @@ def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):
             world_pos_sim = (screen_pos - pan_offset) / (zoom + 1e-18)
             potential_at_point = 0.0
             for body in bodies:
-                dist_vec_sim = body.pos - world_pos_sim
+                # body.pos is 3-D while world_pos_sim is 2-D, so only compare
+                # in the rendered plane to avoid shape mismatches
+                dist_vec_sim = body.pos[:2] - world_pos_sim
                 dist_sq_sim = np.dot(dist_vec_sim, dist_vec_sim)
                 if dist_sq_sim > 1e-18:
                     dist_meters = np.sqrt(dist_sq_sim) * C.SPACE_SCALE

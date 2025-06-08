@@ -115,6 +115,10 @@ distances become millions of times larger than intended.  The same scale is used
 internally for presets so that real solar system parameters remain numerically
 stable.
 
+The default camera zoom assumes positions are given in these scaled units. With
+``ZOOM_BASE`` defined as ``500 * SPACE_SCALE / AU`` one astronomical unit spans
+roughly 500 pixels on screen when using the built‑in presets.
+
 Alternatively, call :py:meth:`Body.from_meters` to create a body using SI
 coordinates directly. The helper converts the position for you so the resulting
 objects interact as expected.  This is important because the gravitational
