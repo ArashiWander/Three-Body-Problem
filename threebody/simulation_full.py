@@ -71,10 +71,11 @@ def main(argv=None):
     theme_path = Path(__file__).with_name("theme.json")
     manager = pygame_gui.UIManager((C.WIDTH, C.HEIGHT), theme_path) # From codex branch (for GUI)
     control = ControlPanel(manager, args.preset)                   # From codex branch (for UI widgets)
-    ui = UIManager(                                                # From main branch (for simulation state)
+    ui = UIManager(
+        manager,
         integrator=args.integrator,
         adaptive=args.adaptive,
-        use_gr=args.use_gr,
+        use_gr=args.gr,
         show_field=args.show_field,
     )
     camera = Camera()                                              # From main branch (for camera control)
