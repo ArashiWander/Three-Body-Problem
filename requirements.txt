@@ -4,3 +4,4 @@ numba
 pygame-ce>=2.5.4
 pygame_gui
 jplephem
+hypothesis
