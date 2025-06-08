@@ -233,3 +233,55 @@ def symplectic4_step_arrays(
     vel[fixed_mask] = velocities[fixed_mask]
 
     return pos, vel
+
+
+def forest_ruth_step_arrays(
+    positions,
+    velocities,
+    masses,
+    fixed_mask,
+    dt,
+    g_constant,
+    use_gr=False,
+    *,
+    use_gpu: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fourth-order symplectic integrator using the Forest–Ruth scheme."""
+
+    w1 = 1.0 / (2.0 - 2.0 ** (1.0 / 3.0))
+    w0 = -2.0 ** (1.0 / 3.0) / (2.0 - 2.0 ** (1.0 / 3.0))
+
+    pos, vel = leapfrog_step_arrays(
+        positions,
+        velocities,
+        masses,
+        fixed_mask,
+        w1 * dt,
+        g_constant,
+        use_gr,
+        use_gpu=use_gpu,
+    )
+
+    pos, vel = leapfrog_step_arrays(
+        pos,
+        vel,
+        masses,
+        fixed_mask,
+        w0 * dt,
+        g_constant,
+        use_gr,
+        use_gpu=use_gpu,
+    )
+
+    pos, vel = leapfrog_step_arrays(
+        pos,
+        vel,
+        masses,
+        fixed_mask,
+        w1 * dt,
+        g_constant,
+        use_gr,
+        use_gpu=use_gpu,
+    )
+
+    return pos, vel

@@ -47,7 +47,7 @@ def main(argv=None):
     parser.add_argument("--preset", default="Sun & Earth", help="Preset system")
     parser.add_argument(
         "--integrator",
-        choices=["RK4", "Symplectic", "Symplectic4"],
+        choices=["RK4", "Symplectic", "Symplectic4", "ForestRuth"],
         default="Symplectic",
     )
     parser.add_argument("--adaptive", action="store_true", help="Use adaptive RK4")
