@@ -67,7 +67,7 @@ def compute_accelerations(
         # 计算牛顿引力
         dist_sq_m = dist_sq_sim * scale_sq
         # 使用 np.errstate 避免除零警告
-        with xp.errstate(divide='ignore', invalid='ignore'):
+
             # 软化因子
             denominator = dist_sq_m + C.SOFTENING_FACTOR_SQ
             factor = g_constant / denominator
