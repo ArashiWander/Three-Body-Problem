@@ -1,6 +1,5 @@
 import pygame
 import pygame_gui
-from pathlib import Path
 
 from . import constants as C
 from .presets import PRESETS
@@ -133,18 +132,13 @@ class UIManager:
 
     def __init__(
         self,
+        manager: pygame_gui.UIManager,
         integrator="Symplectic",
         adaptive=False,
         use_gr=False,
         show_field=False,
-        *,
-        theme_path=None,
     ):
-        if theme_path is None:
-            theme_path = Path(__file__).with_name("theme.json")
-        # NOTE: This creates a second UIManager. This should be refactored later
-        # to share the one created in simulation_full.py. For now, this resolves the conflict.
-        self.manager = pygame_gui.UIManager((C.WIDTH, C.HEIGHT), theme_path)
+        self.manager = manager
 
         panel = pygame_gui.elements.UIPanel(
             pygame.Rect(
