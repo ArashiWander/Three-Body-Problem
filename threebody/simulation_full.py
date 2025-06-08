@@ -309,7 +309,7 @@ def main(softening_length_override=None):
         com_pos, _ = calculate_center_of_mass(bodies)
         if com_pos is not None:
              screen_center = np.array([(WIDTH - UI_SIDEBAR_WIDTH) / 2, (HEIGHT - UI_BOTTOM_HEIGHT) / 2])
-             target_pan = screen_center - com_pos * target_zoom
+             target_pan = screen_center - com_pos[:2] * target_zoom
         else:
              target_pan = INITIAL_PAN_OFFSET.copy()
         # Instantly update current camera for immediate view change
@@ -377,7 +377,7 @@ def main(softening_length_override=None):
                         com_pos, _ = calculate_center_of_mass(bodies)
                         if com_pos is not None:
                              screen_center = np.array([(WIDTH - UI_SIDEBAR_WIDTH) / 2, (HEIGHT - UI_BOTTOM_HEIGHT) / 2])
-                             target_pan = screen_center - com_pos * target_zoom
+                             target_pan = screen_center - com_pos[:2] * target_zoom
                         else:
                              target_pan = INITIAL_PAN_OFFSET.copy() # Reset pan if no bodies
                         # Instantly update current camera as well for immediate reset feel
@@ -579,7 +579,7 @@ def main(softening_length_override=None):
                       com_pos, _ = calculate_center_of_mass(bodies)
                       if com_pos is not None:
                           screen_center = np.array([(WIDTH - UI_SIDEBAR_WIDTH) / 2, (HEIGHT - UI_BOTTOM_HEIGHT) / 2])
-                          target_pan = screen_center - com_pos * target_zoom
+                          target_pan = screen_center - com_pos[:2] * target_zoom
                       else: target_pan = INITIAL_PAN_OFFSET.copy()
                       # Instantly update current camera as well
                       current_zoom = target_zoom
@@ -694,7 +694,7 @@ def main(softening_length_override=None):
         if len(bodies) > 0:
             com_pos, _ = calculate_center_of_mass(bodies)
             if com_pos is not None:
-                com_screen_pos = com_pos * current_zoom + current_pan
+                com_screen_pos = com_pos[:2] * current_zoom + current_pan
                 com_x, com_y = int(com_screen_pos[0]), int(com_screen_pos[1])
                 # Draw small cross marker if within view
                 if 0 <= com_x < (WIDTH - UI_SIDEBAR_WIDTH) and 0 <= com_y < HEIGHT:
