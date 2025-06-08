@@ -9,8 +9,10 @@ import numpy as np
 
 try:
     import numba as nb
+
     NUMBA_AVAILABLE = True
 except Exception:  # pragma: no cover - numba optional or misconfigured
+
     def nb_njit(func):
         return func
 
@@ -22,8 +24,15 @@ except Exception:  # pragma: no cover - numba optional or misconfigured
 
 
 @nb.njit
-def calculate_acceleration_jit(target_pos_sim, target_mass_kg, other_positions_sim,
-                               other_masses_kg, g_const, softening_sq_m2, space_scale):
+def calculate_acceleration_jit(
+    target_pos_sim,
+    target_mass_kg,
+    other_positions_sim,
+    other_masses_kg,
+    g_const,
+    softening_sq_m2,
+    space_scale,
+):
     acc = np.zeros(2, dtype=np.float64)
     num_others = len(other_masses_kg)
     for i in range(num_others):
@@ -31,7 +40,7 @@ def calculate_acceleration_jit(target_pos_sim, target_mass_kg, other_positions_s
         dist_sq_sim = distance_vec_sim[0] ** 2 + distance_vec_sim[1] ** 2
         if dist_sq_sim == 0:
             continue
-        dist_sq_meters = dist_sq_sim * (space_scale ** 2)
+        dist_sq_meters = dist_sq_sim * (space_scale**2)
         acc_mag = g_const * other_masses_kg[i] / (dist_sq_meters + softening_sq_m2)
         dist_sim = np.sqrt(dist_sq_sim)
         direction_vec = distance_vec_sim / dist_sim

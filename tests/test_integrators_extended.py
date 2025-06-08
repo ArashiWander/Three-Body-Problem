@@ -77,6 +77,7 @@ def test_multi_year_symplectic_stability():
 
 def _init_collision_bodies():
     from threebody import constants as C
+
     b1 = Body(C.EARTH_MASS, [-0.007, 0.0], [1000.0, 0.0])
     b2 = Body(C.EARTH_MASS, [0.007, 0.0], [-1000.0, 0.0])
     for name, b in zip(["A", "B"], [b1, b2]):

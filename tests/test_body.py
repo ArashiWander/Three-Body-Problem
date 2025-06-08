@@ -30,6 +30,7 @@ def test_collision_bounce_when_merge_false():
     assert np.isclose(b1.vel[0], -0.7)
     assert np.isclose(b2.vel[0], 0.7)
 
+
 def test_collision_bounce_conserves_momentum():
     b1 = Body(C.EARTH_MASS, [-0.0005, 0, 0], [1.0, 0.0, 0.0], C.WHITE, 5, name="A")
     b2 = Body(C.EARTH_MASS, [0.0005, 0, 0], [-1.0, 0.0, 0.0], C.WHITE, 5, name="B")
@@ -51,4 +52,3 @@ def test_collision_merge_conserves_momentum():
     p_after = bodies[0].mass * bodies[0].vel
     assert np.allclose(p_before, p_after)
     assert np.isclose(bodies[0].mass, 2 * C.EARTH_MASS)
-

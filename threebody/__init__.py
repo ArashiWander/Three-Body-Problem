@@ -13,6 +13,7 @@ from .constants import (
 )
 
 from .nasa import load_ephemeris, body_state, create_body
+
 try:
     __version__ = version("threebody")
 except PackageNotFoundError:

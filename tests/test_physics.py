@@ -12,7 +12,7 @@ def test_accelerations_fixed_body():
     # fixed body should have zero acceleration
     assert np.allclose(acc[0], [0.0, 0.0, 0.0])
     # expected acceleration on free body towards the fixed body
-    expected = -1.0 / (SPACE_SCALE ** 2 + 1.0)
+    expected = -1.0 / (SPACE_SCALE**2 + 1.0)
     assert math.isclose(acc[1][0], expected, rel_tol=1e-12)
     assert math.isclose(acc[1][1], 0.0, abs_tol=1e-12)
     assert math.isclose(acc[1][2], 0.0, abs_tol=1e-12)

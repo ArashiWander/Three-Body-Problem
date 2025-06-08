@@ -14,4 +14,3 @@ def test_simulation_full_theme_load(tmp_path, monkeypatch):
         simulation_full.main()
     finally:
         os.chdir(cwd)
-

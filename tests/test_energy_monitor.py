@@ -1,4 +1,3 @@
-import threebody.constants as C
 from threebody.physics import Body
 from threebody.analysis import EnergyMonitor
 

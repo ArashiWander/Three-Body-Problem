@@ -35,4 +35,3 @@ def create_body(
     """Create a :class:`Body` instance from ephemeris data."""
     pos, vel = body_state(ephem, target, epoch)
     return Body(mass, pos, vel, name=name or str(target))
-

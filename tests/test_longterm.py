@@ -58,9 +58,7 @@ def test_leapfrog_integrator_accuracy():
     v = 29780.0
 
     positions = np.array([[0.0, 0.0, 0.0], [r, 0.0, 0.0]], dtype=float)
-    velocities = np.array(
-        [[0.0, -(earth_mass / sun_mass) * v, 0.0], [0.0, v, 0.0]], dtype=float
-    )
+    velocities = np.array([[0.0, -(earth_mass / sun_mass) * v, 0.0], [0.0, v, 0.0]], dtype=float)
     masses = np.array([sun_mass, earth_mass], dtype=float)
     fixed_mask = np.array([False, False], dtype=bool)
 
@@ -79,4 +77,3 @@ def test_leapfrog_integrator_accuracy():
     earth_final_pos = positions[1]
     assert math.isclose(e0, e1, rel_tol=1e-6)
     assert np.allclose(earth_final_pos, [r, 0.0, 0.0], atol=5e-2)
-
