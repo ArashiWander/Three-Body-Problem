@@ -27,9 +27,10 @@ Install a build matching your CUDA toolkit, for example:
 pip install cupy-cuda12x
 ```
 
-With CuPy available and a compatible GPU present, `compute_accelerations`
-automatically performs its work on the GPU. If no GPU is detected it silently
-falls back to the CPU.
+With CuPy available and a compatible GPU present, you can pass
+``use_gpu=True`` to :func:`compute_accelerations` to offload work to the device.
+When ``cupy`` is missing or no GPU is detected the function falls back to the
+CPU automatically.
 
 ## Running the Simulation
 
@@ -41,8 +42,6 @@ python -m threebody.simulation_full
 
 Use `--softening-length` to override the gravitational softening length in
 metres when launching the simulation.
-Pass ``--use-gpu`` to offload calculations to a CUDA capable device when the
-optional CuPy dependency is installed.
 
 ### Quick Start
 
@@ -69,7 +68,8 @@ from threebody import Body, perform_rk4_step, compute_accelerations, system_ener
 ```
 
 `compute_accelerations` operates directly on NumPy arrays and is shared by both
-the lightweight `threebody.physics` module and the interactive simulation.
+the lightweight `threebody.physics` module and the interactive simulation.  Set
+``use_gpu=True`` to offload the force calculation with CuPy when available.
 `perform_rk4_step` advances bodies using a Runge–Kutta 4th order integrator.
 
 The interactive application uses a richer `Body` implementation found in
@@ -113,8 +113,7 @@ These are standard explicit methods as described in
 symplectic scheme.
 
 In the interactive simulation you can toggle adaptive stepping at runtime by
-pressing <kbd>A</kbd>. A ``--use-gpu`` flag enables GPU acceleration when a
-compatible CUDA device and the optional CuPy package are available.
+pressing <kbd>A</kbd>.
 
 ## Unit Conventions
 
