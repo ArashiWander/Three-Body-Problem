@@ -157,6 +157,7 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
         else:
             mass_ratio = body.mass / C.EARTH_MASS
             radius_sim = earth_radius_sim * (mass_ratio ** (1/3))
+        radius_sim *= C.COLLISION_DISTANCE_FACTOR
         physical_radii_sim.append(max(radius_sim, 0.001 * earth_radius_sim))
         
     for i in range(num_bodies):
