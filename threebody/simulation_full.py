@@ -50,7 +50,8 @@ def main(softening_length_override=None):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption(f"N体模拟 v{__version__} (研究版)")
     clock = pygame.time.Clock()
-    ui_manager = pygame_gui.UIManager((WIDTH, HEIGHT), "theme.json")
+    theme_path = os.path.join(os.path.dirname(__file__), "theme.json")
+    ui_manager = pygame_gui.UIManager((WIDTH, HEIGHT), theme_path)
 
     # --- UI 元素创建 ---
     control_panel_rect = pygame.Rect((WIDTH - UI_SIDEBAR_WIDTH, 0), (UI_SIDEBAR_WIDTH, HEIGHT))
