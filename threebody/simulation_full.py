@@ -54,7 +54,12 @@ def main(argv=None):
     )
     parser.add_argument("--adaptive", action="store_true", help="Use adaptive RK4")
     parser.add_argument("--use-gpu", action="store_true", help="Enable GPU acceleration")
-    parser.add_argument("--gr", action="store_true", help="Use general relativity correction")
+    parser.add_argument(
+        "--gr",
+        dest="use_gr",
+        action="store_true",
+        help="Use general relativity correction",
+    )
     parser.add_argument("--show-field", action="store_true", help="Visualize gravitational field")
     parser.add_argument("--trail-length", type=int, help="Override body trail length")
     parser.add_argument("--merge", action="store_true", help="Merge bodies on collision")
@@ -107,6 +112,10 @@ def main(argv=None):
 
     running = True
     while running:
+        print(f"Bodies count: {len(bodies)}")
+        print(f"Camera Zoom: {camera.zoom:.4f}, Camera Pan: {camera.pan_offset}")
+        if bodies:
+            print(f"Sun Position: {bodies[0].pos}, Earth Position: {bodies[1].pos}")
         time_delta = clock.tick(60) / 1000.0
 
         # --- MERGED EVENT HANDLING LOOP ---
