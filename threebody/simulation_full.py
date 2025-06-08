@@ -96,30 +96,86 @@ def main(softening_length_override=None):
     }
 
     def load_preset(preset_name):
-        # ... (与之前版本相同, 此处省略)
-        pass
-    
+        """Load bodies from a named preset."""
+        state["bodies"].clear()
+        preset = PRESETS.get(preset_name, [])
+        for body_data in preset:
+            pos = np.array([body_data.get("x", 0.0), body_data.get("y", 0.0), 0.0])
+            vel = np.array([body_data.get("vx", 0.0), body_data.get("vy", 0.0), 0.0])
+            body = Body(
+                body_data.get("mass", 0.0),
+                pos,
+                vel,
+                body_data.get("color", WHITE),
+                body_data.get("radius", 5),
+                fixed=body_data.get("fixed", False),
+                name=body_data.get("name"),
+            )
+            state["bodies"].append(body)
+
+        state["current_preset_name"] = preset_name
+        state["simulation_time"] = 0.0
+
     def process_input_events():
         # ... (与之前版本类似，但增加了对新UI元素的处理)
         nonlocal state
-        if event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
-            if event.ui_element == integrator_dropdown:
-                state['integrator_type'] = event.text
-        elif event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-            if event.ui_element == gr_button:
-                state['use_gr_correction'] = not state['use_gr_correction']
-                gr_button.set_text(f"广义相对论修正: {'开' if state['use_gr_correction'] else '关'}")
-        
-        # 选择天体时显示/隐藏数据窗口
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # ...
-            if clicked_on_body:
-                state['selected_body'] = clicked_on_body
-                data_window.show()
-                data_window.set_display_title(f"轨道数据: {state['selected_body'].name}")
-            else:
-                state['selected_body'] = None
-                data_window.hide()
+        for event in pygame.event.get():
+            ui_manager.process_events(event)
+
+            if event.type == pygame.QUIT:
+                state["running"] = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    state["running"] = False
+                elif event.key == pygame.K_SPACE:
+                    state["paused"] = not state["paused"]
+                elif event.key == pygame.K_r:
+                    load_preset(state["current_preset_name"])
+                    state["energy_monitor"].set_initial_energy(state["bodies"], INITIAL_G)
+            elif event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                if event.ui_element == integrator_dropdown:
+                    state["integrator_type"] = event.text
+            elif event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_element == gr_button:
+                    state["use_gr_correction"] = not state["use_gr_correction"]
+                    gr_button.set_text(
+                        f"广义相对论修正: {'开' if state['use_gr_correction'] else '关'}"
+                    )
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    mouse_pos = np.array(event.pos, dtype=float)
+                    clicked_on_body = None
+                    for b in reversed(state["bodies"]):
+                        bx, by = b.get_screen_pos(state["current_zoom"], state["current_pan"])
+                        if np.hypot(bx - mouse_pos[0], by - mouse_pos[1]) <= b.radius_pixels:
+                            clicked_on_body = b
+                            break
+
+                    if clicked_on_body:
+                        state["selected_body"] = clicked_on_body
+                        data_window.show()
+                        data_window.set_display_title(f"轨道数据: {clicked_on_body.name}")
+                    else:
+                        state["selected_body"] = None
+                        data_window.hide()
+                elif event.button == 3:
+                    state["dragging_camera"] = True
+                    state["camera_drag_start_screen"] = np.array(event.pos, dtype=float)
+                    state["camera_drag_start_pan"] = state["target_pan"].copy()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 3:
+                    state["dragging_camera"] = False
+            elif event.type == pygame.MOUSEMOTION:
+                if state.get("dragging_camera"):
+                    offset = np.array(event.pos, dtype=float) - state["camera_drag_start_screen"]
+                    state["target_pan"] = state["camera_drag_start_pan"] + offset
+            elif event.type == pygame.MOUSEWHEEL:
+                zoom_scale = ZOOM_FACTOR ** event.y
+                mouse_pos = np.array(pygame.mouse.get_pos(), dtype=float)
+                state["target_zoom"] *= zoom_scale
+                state["target_pan"] = (state["target_pan"] - mouse_pos) * zoom_scale + mouse_pos
+
+        ui_manager.update(clock.get_time() / 1000.0)
 
     def update_physics():
         if not state['paused'] and state['bodies']:
@@ -179,6 +235,18 @@ def main(softening_length_override=None):
     pygame.quit()
 
 if __name__ == "__main__":
-    # ... (入口代码)
-    pass
+    parser = argparse.ArgumentParser(description="Interactive N-body simulation")
+    parser.add_argument(
+        "--softening-length",
+        type=float,
+        default=None,
+        help="Override gravitational softening length in metres",
+    )
+    args = parser.parse_args()
+
+    if args.softening_length is not None:
+        C.SOFTENING_LENGTH = float(args.softening_length)
+        C.SOFTENING_FACTOR_SQ = C.SOFTENING_LENGTH ** 2
+
+    main(args.softening_length)
 
