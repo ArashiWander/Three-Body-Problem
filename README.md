@@ -96,6 +96,14 @@ earth = create_body(ephem, 399, epoch, EARTH_MASS, name="Earth")
 The ``de421.bsp`` kernel can be downloaded from NASA archives or the
 [``python-jplephem`` repository](https://github.com/brandon-rhodes/python-jplephem/blob/master/de421.bsp).
 
+``threebody.nasa`` also provides ``download_ephemeris`` to fetch a kernel
+programmatically. A command line wrapper is installed as
+``threebody-download``:
+
+```bash
+threebody-download https://example.com/de421.bsp kernels/
+```
+
 ## Integrator Choices
 
 Three integrators are provided:
