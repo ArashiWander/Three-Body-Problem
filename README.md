@@ -144,12 +144,12 @@ distances become millions of times larger than intended.  The same scale is used
 internally for presets so that real solar system parameters remain numerically
 stable.
 
-Alternatively, call :py:meth:`Body.from_meters` to create a body using SI
-coordinates directly. The helper converts the position for you so the resulting
-objects interact as expected.  This is important because the gravitational
-constant ``G_REAL`` bundled with the library is expressed in SI units.
-Its value of ``6.67430e-11`` m³ kg⁻¹ s⁻² is defined in
-``threebody.constants`` and used for all gravitational calculations.
+Always use :py:meth:`Body.from_meters` when your input coordinates are in
+SI metres. The helper converts the position for you so the resulting objects
+interact as expected.  This is important because the gravitational
+constant ``G_REAL`` bundled with the library is expressed in SI units. Its
+value of ``6.67430e-11`` m³ kg⁻¹ s⁻² is defined in ``threebody.constants`` and
+used for all gravitational calculations.
 
 ## Adjusting Body Trails
 

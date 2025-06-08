@@ -36,20 +36,26 @@ def compute_accelerations(
     n = len(masses)
     if n == 0:
         # 确保返回与输入形状匹配的空数组
-        return np.zeros_like(positions, dtype=np.float64)
+        return xp.zeros_like(positions, dtype=float)
 
     # 确保位置和速度是3D的
     if positions.shape[1] == 2:
-        positions_3d = np.hstack([positions, np.zeros((n, 1), dtype=positions.dtype)])
+        positions_3d = xp.hstack([
+            positions,
+            xp.zeros((n, 1), dtype=positions.dtype),
+        ])
     else:
         positions_3d = positions
-    
+
     if velocities is not None and velocities.shape[1] == 2:
-        velocities_3d = np.hstack([velocities, np.zeros((n, 1), dtype=velocities.dtype)])
+        velocities_3d = xp.hstack([
+            velocities,
+            xp.zeros((n, 1), dtype=velocities.dtype),
+        ])
     else:
         velocities_3d = velocities
 
-    acc = np.zeros_like(positions_3d, dtype=np.float64)
+    acc = xp.zeros_like(positions_3d, dtype=float)
     scale_sq = C.SPACE_SCALE ** 2
 
     for i in range(n):
