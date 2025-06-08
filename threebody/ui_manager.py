@@ -1,12 +1,135 @@
-from pathlib import Path
 import pygame
 import pygame_gui
+from pathlib import Path
 
 from . import constants as C
+from .presets import PRESETS
+from .analysis import calculate_orbital_elements
+
+# --- KEPT FROM THE 'codex' BRANCH ---
+class ControlPanel:
+    """Helper to build and manage the on-screen control panel for presets and playback."""
+
+    def __init__(self, manager: pygame_gui.UIManager, default_preset: str):
+        width = C.UI_SIDEBAR_WIDTH
+        height = C.HEIGHT - C.UI_BOTTOM_HEIGHT
+        self.manager = manager
+        self.panel = pygame_gui.elements.UIPanel(
+            pygame.Rect(C.WIDTH - width, 0, width, height),
+            manager=manager,
+            object_id="#control_panel",
+        )
+        y = 0
+        pygame_gui.elements.UILabel(
+            pygame.Rect(0, y, width, 30),
+            text="Controls",
+            manager=manager,
+            container=self.panel,
+            object_id="#title_label",
+        )
+        y += 40
+        self.preset_menu = pygame_gui.elements.UIDropDownMenu(
+            list(PRESETS.keys()),
+            default_preset,
+            pygame.Rect(10, y, width - 20, 25),
+            manager=manager,
+            container=self.panel,
+        )
+        y += 35
+        self.play_button = pygame_gui.elements.UIButton(
+            pygame.Rect(10, y, 80, 25),
+            "Play",
+            manager,
+            container=self.panel,
+        )
+        self.reset_button = pygame_gui.elements.UIButton(
+            pygame.Rect(100, y, 80, 25),
+            "Reset",
+            manager,
+            container=self.panel,
+        )
+        self.step_button = pygame_gui.elements.UIButton(
+            pygame.Rect(190, y, 80, 25),
+            "Step",
+            manager,
+            container=self.panel,
+        )
+        y += 35
+        self.speed_label = pygame_gui.elements.UILabel(
+            pygame.Rect(10, y, width - 20, 20),
+            f"Speed: {C.TIME_STEP_BASE:.0f}",
+            manager,
+            container=self.panel,
+        )
+        y += 20
+        self.speed_slider = pygame_gui.elements.UIHorizontalSlider(
+            pygame.Rect(10, y, width - 20, 20),
+            start_value=C.TIME_STEP_BASE,
+            value_range=(10, 3600),
+            manager=manager,
+            container=self.panel,
+        )
+        y += 30
+        self.trail_label = pygame_gui.elements.UILabel(
+            pygame.Rect(10, y, width - 20, 20),
+            f"Trail: {C.DEFAULT_TRAIL_LENGTH}",
+            manager,
+            container=self.panel,
+        )
+        y += 20
+        self.trail_slider = pygame_gui.elements.UIHorizontalSlider(
+            pygame.Rect(10, y, width - 20, 20),
+            start_value=C.DEFAULT_TRAIL_LENGTH,
+            value_range=(C.MIN_TRAIL_LENGTH, C.MAX_TRAIL_LENGTH),
+            manager=manager,
+            container=self.panel,
+        )
+        y += 30
+        self.save_button = pygame_gui.elements.UIButton(
+            pygame.Rect(10, y, 80, 25),
+            "Save",
+            manager,
+            container=self.panel,
+        )
+        self.load_button = pygame_gui.elements.UIButton(
+            pygame.Rect(100, y, 80, 25),
+            "Load",
+            manager,
+            container=self.panel,
+        )
+        y += 35
+        self.info_box = pygame_gui.elements.UITextBox(
+            "",
+            pygame.Rect(10, y, width - 20, 150),
+            manager,
+            container=self.panel,
+        )
+
+    def update_speed_label(self, value: float):
+        self.speed_label.set_text(f"Speed: {value:.0f}")
+
+    def update_trail_label(self, value: float):
+        self.trail_label.set_text(f"Trail: {int(value)}")
+
+    def update_body_info(self, body, central_body=None):
+        if body is None:
+            self.info_box.set_text("")
+            return
+        elems = calculate_orbital_elements(body, central_body) if central_body else {}
+        text = (
+            f"<b>{body.name}</b><br>"
+            f"m={body.mass:.2e} kg<br>"
+            f"pos={body.pos}<br>"
+            f"vel={body.vel}<br>"
+            f"a={elems.get('semi_major_axis', 0):.2e} m "
+            f"e={elems.get('eccentricity', 0):.3f}"
+        )
+        self.info_box.set_text(text)
 
 
+# --- KEPT FROM THE 'main' BRANCH ---
 class UIManager:
-    """Create and manage all pygame_gui elements."""
+    """Create and manage all pygame_gui elements for simulation parameters."""
 
     def __init__(
         self,
@@ -19,22 +142,21 @@ class UIManager:
     ):
         if theme_path is None:
             theme_path = Path(__file__).with_name("theme.json")
+        # NOTE: This creates a second UIManager. This should be refactored later
+        # to share the one created in simulation_full.py. For now, this resolves the conflict.
         self.manager = pygame_gui.UIManager((C.WIDTH, C.HEIGHT), theme_path)
 
         panel = pygame_gui.elements.UIPanel(
             pygame.Rect(
-                C.WIDTH - C.UI_SIDEBAR_WIDTH,
-                0,
-                C.UI_SIDEBAR_WIDTH,
-                C.HEIGHT - C.UI_BOTTOM_HEIGHT,
+                0, 0, C.UI_SIDEBAR_WIDTH, C.HEIGHT - C.UI_BOTTOM_HEIGHT,
             ),
             manager=self.manager,
-            object_id="#control_panel",
+            object_id="#control_panel", # Consider a different ID to avoid style conflicts
         )
 
         pygame_gui.elements.UILabel(
             pygame.Rect(0, 0, panel.rect.width, 30),
-            text="Controls",
+            text="Settings", # Changed text to differentiate panels
             manager=self.manager,
             container=panel,
             object_id="#title_label",
@@ -68,7 +190,7 @@ class UIManager:
             container=panel,
             initial_state=show_field,
         )
-
+        # Other settings sliders...
         self.ts_label = pygame_gui.elements.UILabel(
             pygame.Rect(10, 145, panel.rect.width - 20, 20),
             f"dt: {C.TIME_STEP_BASE:.0f}",
@@ -79,33 +201,6 @@ class UIManager:
             pygame.Rect(10, 165, panel.rect.width - 20, 20),
             start_value=C.TIME_STEP_BASE,
             value_range=(10, 3600),
-            manager=self.manager,
-            container=panel,
-        )
-
-        self.soft_label = pygame_gui.elements.UILabel(
-            pygame.Rect(10, 190, panel.rect.width - 20, 20),
-            f"soft: {C.SOFTENING_LENGTH:.2e}",
-            manager=self.manager,
-            container=panel,
-        )
-        self.soft_slider = pygame_gui.elements.UIHorizontalSlider(
-            pygame.Rect(10, 210, panel.rect.width - 20, 20),
-            start_value=C.SOFTENING_LENGTH,
-            value_range=(0.1, 10.0),
-            manager=self.manager,
-            container=panel,
-        )
-
-        self.save_button = pygame_gui.elements.UIButton(
-            pygame.Rect(10, 240, 60, 25),
-            "Save",
-            manager=self.manager,
-            container=panel,
-        )
-        self.load_button = pygame_gui.elements.UIButton(
-            pygame.Rect(80, 240, 60, 25),
-            "Load",
             manager=self.manager,
             container=panel,
         )
@@ -137,15 +232,6 @@ class UIManager:
             if event.ui_element == self.ts_slider:
                 C.TIME_STEP_BASE = event.value
                 self.ts_label.set_text(f"dt: {event.value:.0f}")
-            elif event.ui_element == self.soft_slider:
-                C.SOFTENING_LENGTH = float(event.value)
-                C.SOFTENING_FACTOR_SQ = C.SOFTENING_LENGTH ** 2
-                self.soft_label.set_text(f"soft: {C.SOFTENING_LENGTH:.2e}")
-        if event.type == pygame_gui.UI_BUTTON_PRESSED:
-            if event.ui_element == self.save_button:
-                return "save"
-            if event.ui_element == self.load_button:
-                return "load"
         return None
 
     def update(self, time_delta):
