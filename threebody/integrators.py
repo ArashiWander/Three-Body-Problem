@@ -45,7 +45,6 @@ def compute_accelerations(
         dist_sq_m = dist_sq_sim * scale_sq
         # 使用 np.errstate 避免除零警告
         with np.errstate(divide='ignore', invalid='ignore'):
-            inv_dist_m = 1.0 / np.sqrt(dist_sq_m)
             # 软化因子
             denominator = dist_sq_m + C.SOFTENING_FACTOR_SQ
             factor = g_constant / denominator
