@@ -1,0 +1,61 @@
+{
+    "defaults":
+    {
+        "colours":
+        {
+            "normal_bg": "#202028",
+            "hovered_bg": "#303038",
+            "disabled_bg": "#25252d",
+            "selected_bg": "#3c64a8",
+            "dark_bg": "#15151a",
+            "normal_text": "#e0e0e0",
+            "hovered_text": "#ffffff",
+            "selected_text": "#ffffff",
+            "disabled_text": "#808080",
+            "link_text": "#80a0ff",
+            "link_hover": "#a0c0ff",
+            "link_selected": "#ffffff",
+            "text_shadow": "#000000",
+            "normal_border": "#404050",
+            "hovered_border": "#505060",
+            "disabled_border": "#303040"
+        }
+    },
+    "#control_panel":
+    {
+        "colours":
+        {
+            "dark_bg": "#1a1a20"
+        }
+    },
+    "#title_label":
+    {
+        "misc":
+        {
+            "font": {
+                "name": "fira_code",
+                "size": "24",
+                "bold": "1"
+            }
+        }
+    },
+    "#section_header":
+    {
+         "misc":
+        {
+            "font": {
+                "name": "fira_code",
+                "size": "16",
+                "bold": "0",
+                "italic": "1"
+            }
+        },
+        "colours": {
+            "normal_text": "#b0c0f0"
+        }
+    },
+    "button":
+    {
+        "misc": { "border_width": "1" }
+    }
+}
