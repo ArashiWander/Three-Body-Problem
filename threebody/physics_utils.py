@@ -6,7 +6,12 @@ from .jit import apply_boundary_conditions_jit
 
 
 class _QuadTree:
-    """Simple 2-D quadtree for fast neighbourhood queries."""
+    """Simple 2-D quadtree for fast neighbourhood queries.
+
+    The tree stores points as ``(index, (x, y))`` tuples and supports
+    rectangular as well as circular queries.  It is intentionally light
+    weight as it is rebuilt every frame during collision detection.
+    """
 
     __slots__ = (
         "bounds",
@@ -77,6 +82,25 @@ class _QuadTree:
         if self.children is not None:
             for child in self.children:
                 child.query(region, out)
+        return out
+
+    def query_circle(self, center, radius, out=None):
+        """Return indices of points within ``radius`` of ``center``."""
+        if out is None:
+            out = []
+        cx, cy = center
+        r_sq = radius * radius
+        region = (cx - radius, cy - radius, cx + radius, cy + radius)
+        if not self._intersects(region):
+            return out
+        for idx, (x, y) in self.points:
+            dx = x - cx
+            dy = y - cy
+            if dx * dx + dy * dy <= r_sq:
+                out.append(idx)
+        if self.children is not None:
+            for child in self.children:
+                child.query_circle(center, radius, out)
         return out
 
 def step_simulation(
@@ -318,13 +342,7 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
         body1 = bodies[i]
         radius1_sim = physical_radii_sim[i]
         query_radius = radius1_sim + max_radius
-        region = (
-            positions_2d[i, 0] - query_radius,
-            positions_2d[i, 1] - query_radius,
-            positions_2d[i, 0] + query_radius,
-            positions_2d[i, 1] + query_radius,
-        )
-        candidates = root.query(region)
+        candidates = root.query_circle(tuple(positions_2d[i]), query_radius)
         for j in candidates:
             if j <= i or j in indices_to_remove:
                 continue
