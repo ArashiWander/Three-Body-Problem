@@ -1,5 +1,6 @@
 import numpy as np
 import pygame
+from collections import deque
 from . import constants as C
 from .physics_utils import calculate_system_energies
 
