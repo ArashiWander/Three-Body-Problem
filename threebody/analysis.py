@@ -3,6 +3,8 @@ import pygame
 from collections import deque
 from . import constants as C
 from .physics_utils import calculate_system_energies
+import csv
+import os
 
 def calculate_orbital_elements(body, central_body):
     """计算并返回一个天体相对于中心天体的轨道根数。"""
@@ -90,3 +92,26 @@ class EnergyMonitor:
         font = pygame.font.Font(None, 18)
         text = font.render(f"能量漂移: {self.history[-1]:.3e} %", True, (200, 200, 200))
         surface.blit(text, (10, 5))
+
+    def export_csv(self, file, delimiter=","):
+        """Export the recorded energy drift history to a CSV file.
+
+        Parameters
+        ----------
+        file : str or file-like
+            Destination filename or open file object.
+        delimiter : str, optional
+            Delimiter used between columns (default is ',').
+        """
+        close = False
+        if isinstance(file, (str, bytes, os.PathLike)):
+            f = open(file, "w", newline="")
+            close = True
+        else:
+            f = file
+        writer = csv.writer(f, delimiter=delimiter)
+        writer.writerow(["step", "energy_drift_percent"])
+        for i, drift in enumerate(self.history):
+            writer.writerow([i, drift])
+        if close:
+            f.close()

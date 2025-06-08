@@ -161,6 +161,17 @@ retains. The length is clamped between `MIN_TRAIL_LENGTH` and
 `True` the bodies combine into one mass; otherwise they bounce using a simple
 elastic collision model.
 
+## Energy Monitoring
+
+The window shows a chart of the percentage energy drift over time.  Call
+``EnergyMonitor.export_csv()`` to save this history for offline analysis:
+
+```python
+from threebody.analysis import EnergyMonitor
+energy_monitor = EnergyMonitor()
+energy_monitor.export_csv("energy.csv")
+```
+
 ## Configuration Parameters
 
 The `threebody.constants` module exposes numerous tuning options. Important
