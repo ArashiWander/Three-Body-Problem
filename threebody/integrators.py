@@ -7,9 +7,32 @@ def compute_accelerations(
     fixed_mask: np.ndarray,
     g_constant: float = C.G_REAL,
     use_gr_correction: bool = False,
-    velocities: np.ndarray = None # GR修正需要速度
+    velocities: np.ndarray = None,  # GR修正需要速度
+    use_gpu: bool = False,
 ) -> np.ndarray:
-    """计算每个天体的加速度，可选广义相对论修正。"""
+    """计算每个天体的加速度，可选广义相对论修正。
+
+    Parameters
+    ----------
+    use_gpu : bool, optional
+        If True and the ``cupy`` package is available, calculations are
+        performed on the GPU. When ``cupy`` is missing or initialization fails
+        the function automatically falls back to NumPy on the CPU.
+    """
+    xp = np
+    if use_gpu:
+        try:
+            import cupy as cp
+        except Exception:
+            use_gpu = False
+        else:
+            xp = cp
+            positions = cp.asarray(positions)
+            masses = cp.asarray(masses)
+            fixed_mask = cp.asarray(fixed_mask)
+            if velocities is not None:
+                velocities = cp.asarray(velocities)
+
     n = len(masses)
     if n == 0:
         # 确保返回与输入形状匹配的空数组
@@ -36,28 +59,28 @@ def compute_accelerations(
         # 为了提高效率，只计算对天体i的作用力
         # 使用向量化计算与天体i的相对位置和距离
         r_vecs = positions_3d - positions_3d[i]
-        dist_sq_sim = np.einsum('ij,ij->i', r_vecs, r_vecs)
+        dist_sq_sim = xp.einsum('ij,ij->i', r_vecs, r_vecs)
 
         # 避免与自身计算
-        dist_sq_sim[i] = np.inf 
+        dist_sq_sim[i] = xp.inf
         
         # 计算牛顿引力
         dist_sq_m = dist_sq_sim * scale_sq
         # 使用 np.errstate 避免除零警告
-        with np.errstate(divide='ignore', invalid='ignore'):
+
             # 软化因子
             denominator = dist_sq_m + C.SOFTENING_FACTOR_SQ
             factor = g_constant / denominator
         
         # 将无用的值（inf, nan）替换为0
-        factor[~np.isfinite(factor)] = 0.0
+        factor[~xp.isfinite(factor)] = 0.0
         
         # 方向向量
-        norm_r_vecs = r_vecs * (1.0 / np.sqrt(dist_sq_sim))[:, np.newaxis]
-        norm_r_vecs[~np.isfinite(norm_r_vecs)] = 0.0
+        norm_r_vecs = r_vecs * (1.0 / xp.sqrt(dist_sq_sim))[:, xp.newaxis]
+        norm_r_vecs[~xp.isfinite(norm_r_vecs)] = 0.0
         
         # 计算总牛顿加速度
-        newtonian_acc = np.sum(norm_r_vecs * (factor * masses)[:, np.newaxis], axis=0)
+        newtonian_acc = xp.sum(norm_r_vecs * (factor * masses)[:, xp.newaxis], axis=0)
         acc[i] += newtonian_acc
 
         # 计算广义相对论修正
@@ -73,20 +96,23 @@ def compute_accelerations(
                 
                 if r_m_sq == 0: continue
 
-                r_m = np.sqrt(r_m_sq)
+                r_m = xp.sqrt(r_m_sq)
                 c_sq = C.C_LIGHT ** 2
                 
                 # 计算角动量 L = r x v
-                L_vec = np.cross(r_vec_m, v_vec_i)
-                L_sq = np.dot(L_vec, L_vec)
+                L_vec = xp.cross(r_vec_m, v_vec_i)
+                L_sq = xp.dot(L_vec, L_vec)
                 
                 # 进动项 F_gr = - (3 * G * M * L^2) / (c^2 * r^4) * r_hat
                 gr_acc_mag = (3 * GM * L_sq) / (r_m**4 * c_sq)
-                
-                gr_acc_vec = -gr_acc_mag * (r_vecs[j] / np.sqrt(dist_sq_sim[j]))
+
+                gr_acc_vec = -gr_acc_mag * (r_vecs[j] / xp.sqrt(dist_sq_sim[j]))
                 acc[i] += gr_acc_vec
 
-    return acc[:, :positions.shape[1]] # 返回与输入维度一致的加速度
+    acc = acc[:, :positions.shape[1]]  # 返回与输入维度一致的加速度
+    if use_gpu:
+        acc = xp.asnumpy(acc)
+    return acc
 
 def rk4_step_arrays(
     positions, velocities, masses, fixed_mask, dt, g_constant, use_gr=False
