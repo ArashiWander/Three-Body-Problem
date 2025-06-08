@@ -25,8 +25,13 @@ def step_simulation(bodies, dt, g_constant, integrator_type='Symplectic', use_gr
         new_pos, new_vel = leapfrog_step_arrays(positions, velocities, masses, fixed_mask, dt, g_constant, use_gr)
 
     for i, body in enumerate(bodies):
-        if not body.fixed:
+        if body.fixed:
+            continue
+        if hasattr(body, "update_physics_state"):
             body.update_physics_state(new_pos[i], new_vel[i])
+        else:
+            body.pos = new_pos[i]
+            body.vel = new_vel[i]
 
 # --- 以下是所有函数的完整实现 ---
 
@@ -131,10 +136,15 @@ def adaptive_rk4_step(bodies, current_dt, g_constant, error_tolerance, use_bound
     # 如果误差在容忍范围内，则接受步长
     if max_rel_error <= error_tolerance or dt <= C.MIN_TIME_STEP:
         for i, body in enumerate(bodies):
-            if not body.fixed:
+            if body.fixed:
+                continue
+            if hasattr(body, "update_physics_state"):
                 body.update_physics_state(pos2[i], vel2[i])
-                if use_boundaries and bounds_sim is not None and hasattr(body, 'handle_boundary_collision'):
-                    body.handle_boundary_collision(bounds_sim)
+            else:
+                body.pos = pos2[i]
+                body.vel = vel2[i]
+            if use_boundaries and bounds_sim is not None and hasattr(body, "handle_boundary_collision"):
+                body.handle_boundary_collision(bounds_sim)
         return dt, dt_new
     else:
         # 否则，拒绝步长并建议使用更小的时间步重试
@@ -170,7 +180,8 @@ def detect_and_handle_collisions(bodies, merge_on_collision=False):
             distance_vec_sim = body2.pos - body1.pos
             dist_sq_sim = np.dot(distance_vec_sim, distance_vec_sim)
             
-            collision_threshold_sq = (radius1_sim + radius2_sim)**2
+            collision_dist = C.COLLISION_DISTANCE_FACTOR * (radius1_sim + radius2_sim)
+            collision_threshold_sq = collision_dist ** 2
             
             if dist_sq_sim < collision_threshold_sq and dist_sq_sim > 1e-18:
                 pair = tuple(sorted((i, j)))

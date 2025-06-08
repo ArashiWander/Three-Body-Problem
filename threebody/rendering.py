@@ -107,10 +107,24 @@ class Body:
         self.trail = deque(self.trail, maxlen=self.max_trail_length)
 
     def draw(self, screen, zoom, pan_offset, draw_labels):
-        if not self.visible: return
+        if not self.visible:
+            return
+
         screen_pos = self.last_screen_pos
-        # ... 绘制逻辑 ...
-        pass
+        x, y = int(screen_pos[0]), int(screen_pos[1])
+
+        if self.show_trail and len(self.trail) > 1:
+            pygame.draw.aalines(screen, self.color, False,
+                                [(int(px), int(py)) for px, py in self.trail])
+
+        radius = int(max(1, self.radius_pixels * (zoom ** C.BODY_ZOOM_SCALING_POWER)))
+        pygame.gfxdraw.filled_circle(screen, x, y, radius, self.color)
+        pygame.gfxdraw.aacircle(screen, x, y, radius, self.color)
+
+        if draw_labels:
+            font = pygame.font.Font(None, 16)
+            label = font.render(self.name, True, C.WHITE)
+            screen.blit(label, (x + radius + 2, y - radius - 2))
     
     def get_screen_pos(self, zoom, pan_offset):
         screen_pos = self.pos[:2] * zoom + pan_offset
@@ -124,5 +138,28 @@ class Body:
             self.vel[:2] = new_vel
 
 def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):
-    # ... 函数实现与原文件相同 ...
-    pass
+    width, height = screen.get_size()
+    resolution = max(5, int(C.FIELD_RESOLUTION))
+
+    for gx in range(0, width, resolution):
+        for gy in range(0, height, resolution):
+            world_pos_sim = (np.array([gx, gy], dtype=float) - pan_offset) / (zoom + 1e-18)
+
+            acc_vec = np.zeros(2, dtype=float)
+            for body in bodies:
+                r_vec_sim = body.pos[:2] - world_pos_sim
+                dist_sq_sim = np.dot(r_vec_sim, r_vec_sim)
+                if dist_sq_sim <= 1e-18:
+                    continue
+                dist_sq_m = dist_sq_sim * C.SPACE_SCALE ** 2
+                factor = g_constant * body.mass / (dist_sq_m + C.SOFTENING_FACTOR_SQ)
+                acc_vec += factor * r_vec_sim / np.sqrt(dist_sq_sim)
+
+            mag = np.linalg.norm(acc_vec)
+            if mag == 0:
+                continue
+
+            direction = acc_vec / mag
+            length = min(resolution * 0.4, np.log1p(mag) * (resolution * 0.25))
+            end_pos = (gx + direction[0] * length, gy + direction[1] * length)
+            pygame.draw.line(screen, C.DARK_GRAY, (gx, gy), end_pos, 1)
