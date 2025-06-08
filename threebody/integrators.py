@@ -40,12 +40,19 @@ def compute_accelerations(
 
     # 确保位置和速度是3D的
     if positions.shape[1] == 2:
-        positions_3d = xp.hstack([positions, xp.zeros((n, 1), dtype=positions.dtype)])
+        positions_3d = xp.hstack([
+            positions,
+            xp.zeros((n, 1), dtype=positions.dtype),
+        ])
+ 
     else:
         positions_3d = positions
-    
+
     if velocities is not None and velocities.shape[1] == 2:
-        velocities_3d = xp.hstack([velocities, xp.zeros((n, 1), dtype=velocities.dtype)])
+        velocities_3d = xp.hstack([
+            velocities,
+            xp.zeros((n, 1), dtype=velocities.dtype),
+        ])
     else:
         velocities_3d = velocities
 

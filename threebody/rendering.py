@@ -4,6 +4,7 @@
 简单的物理天体，增加了颜色、半径和轨迹管理等额外的视觉属性。
 """
 from collections import deque
+import warnings
 import pygame
 import pygame.gfxdraw
 import numpy as np
@@ -27,6 +28,12 @@ class Body:
         p = np.asarray(pos, dtype=float).reshape(-1)
         if p.size < 3:
             p = np.pad(p, (0, 3 - p.size))
+        if np.any(np.abs(p) > C.SPACE_SCALE):
+            warnings.warn(
+                "Position values appear to be in metres. "
+                "Use Body.from_meters() to convert to simulation units.",
+                UserWarning,
+            )
         self.pos = p[:3] # 内部存储的是模拟单位
 
         v = np.asarray(vel, dtype=float).reshape(-1)
