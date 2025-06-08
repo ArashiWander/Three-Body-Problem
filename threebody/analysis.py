@@ -7,7 +7,7 @@ import csv
 import os
 
 def calculate_orbital_elements(body, central_body):
-    """计算并返回一个天体相对于中心天体的轨道根数。"""
+    """Return the orbital elements of ``body`` relative to ``central_body``."""
     if body is None or central_body is None or body.mass <= 0:
         return {
             'semi_major_axis': 0, 'eccentricity': 0, 'period': 0,
@@ -30,14 +30,14 @@ def calculate_orbital_elements(body, central_body):
     e_vec = (np.cross(v_vec, h_vec) / mu) - (r_vec * C.SPACE_SCALE / r)
     eccentricity = np.linalg.norm(e_vec)
 
-    if abs(specific_orbital_energy) < 1e-9: # 抛物线轨道
+    if abs(specific_orbital_energy) < 1e-9: # parabolic orbit
         semi_major_axis = float('inf')
         period = float('inf')
     else:
         semi_major_axis = -mu / (2 * specific_orbital_energy)
-        if semi_major_axis > 0: # 椭圆轨道
+        if semi_major_axis > 0: # elliptical orbit
              period = 2 * np.pi * np.sqrt(semi_major_axis**3 / mu)
-        else: # 双曲线轨道
+        else: # hyperbolic orbit
             period = float('inf')
 
     periapsis = semi_major_axis * (1 - eccentricity) if semi_major_axis > 0 else 0
@@ -53,7 +53,7 @@ def calculate_orbital_elements(body, central_body):
     }
 
 class EnergyMonitor:
-    """监控并绘制系统总能量的变化。"""
+    """Monitor and plot the change in total system energy."""
     def __init__(self, max_points=500):
         self.history = deque(maxlen=max_points)
         self.initial_energy = None
@@ -76,7 +76,7 @@ class EnergyMonitor:
         width, height = surface.get_size()
         points = []
         max_drift = max(abs(p) for p in self.history) if self.history else 1e-9
-        max_drift = max(max_drift, 1e-9) # 避免除以零
+        max_drift = max(max_drift, 1e-9) # avoid division by zero
 
         for i, drift in enumerate(self.history):
             x = (i / (self.history.maxlen - 1)) * width
@@ -85,10 +85,10 @@ class EnergyMonitor:
         
         pygame.draw.lines(surface, (255, 100, 100), False, points, 2)
         
-        # 绘制0%基准线
+        # draw the 0% baseline
         pygame.draw.line(surface, (100, 100, 100), (0, height / 2), (width, height / 2), 1)
 
-        # 显示最大漂移值
+        # display the most recent drift value
         font = pygame.font.Font(None, 18)
         text = font.render(f"能量漂移: {self.history[-1]:.3e} %", True, (200, 200, 200))
         surface.blit(text, (10, 5))
