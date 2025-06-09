@@ -56,7 +56,6 @@ def main(argv=None):
     parser.add_argument("--use-gpu", action="store_true", help="Enable GPU acceleration")
     parser.add_argument(
         "--gr",
-        dest="use_gr",
         action="store_true",
         help="Use general relativity correction",
     )
