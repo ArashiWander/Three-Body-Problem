@@ -12,7 +12,6 @@ else:  # pragma: no cover - unexpected version
 from . import constants as C
 from .presets import PRESETS
 from .analysis import calculate_orbital_elements
-
 # --- KEPT FROM THE 'codex' BRANCH ---
 class ControlPanel:
     """Helper to build and manage the on-screen control panel for presets and playback."""
