@@ -1,6 +1,14 @@
 import pygame
 import pygame_gui
 
+# Allow compatibility with pygame_gui versions using different checkbox names
+if hasattr(pygame_gui.elements, "UICheckBox"):
+    _UICheckBox = pygame_gui.elements.UICheckBox
+elif hasattr(pygame_gui.elements, "UICheckbox"):  # pragma: no cover - older versions
+    _UICheckBox = pygame_gui.elements.UICheckbox
+else:  # pragma: no cover - unexpected version
+    raise ImportError("UICheckBox class not found in pygame_gui.elements")
+
 from . import constants as C
 from .presets import PRESETS
 from .analysis import calculate_orbital_elements
@@ -163,21 +171,21 @@ class UIManager:
             manager=self.manager,
             container=panel,
         )
-        self.adaptive_box = pygame_gui.elements.UICheckBox(
+        self.adaptive_box = _UICheckBox(
             pygame.Rect(10, 70, panel.rect.width - 20, 20),
             "Adaptive",
             manager=self.manager,
             container=panel,
             initial_state=adaptive,
         )
-        self.gr_box = pygame_gui.elements.UICheckBox(
+        self.gr_box = _UICheckBox(
             pygame.Rect(10, 95, panel.rect.width - 20, 20),
             "GR Correction",
             manager=self.manager,
             container=panel,
             initial_state=use_gr,
         )
-        self.field_box = pygame_gui.elements.UICheckBox(
+        self.field_box = _UICheckBox(
             pygame.Rect(10, 120, panel.rect.width - 20, 20),
             "Show Field",
             manager=self.manager,
