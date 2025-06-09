@@ -7,7 +7,15 @@ if hasattr(pygame_gui.elements, "UICheckBox"):
 elif hasattr(pygame_gui.elements, "UICheckbox"):  # pragma: no cover - older versions
     _UICheckBox = pygame_gui.elements.UICheckbox
 else:  # pragma: no cover - unexpected version
-    raise ImportError("UICheckBox class not found in pygame_gui.elements")
+    try:
+        from pygame_gui.elements.ui_check_box import UICheckBox as _UICheckBox
+    except Exception:  # pragma: no cover - fallback also failed
+        try:
+            from pygame_gui.elements.ui_check_box import UICheckbox as _UICheckBox
+        except Exception as exc:
+            raise ImportError(
+                "UICheckBox class not found in pygame_gui.elements"
+            ) from exc
 
 from . import constants as C
 from .presets import PRESETS
