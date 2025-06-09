@@ -1,7 +1,6 @@
 import importlib
 import sys
 import types
-
 import pygame_gui
 
 
@@ -24,5 +23,5 @@ def test_uicheckbox_import_fallback(monkeypatch):
 
     import threebody.ui_manager as ui_manager
     importlib.reload(ui_manager)
-
     assert ui_manager._UICheckBox is DummyCheckBox
+

@@ -19,6 +19,7 @@ else:  # pragma: no cover - unexpected version
             "UICheckBox class not found in pygame_gui.elements"
         ) from exc
 
+
 from . import constants as C
 from .presets import PRESETS
 from .analysis import calculate_orbital_elements
