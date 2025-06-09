@@ -1,11 +1,13 @@
 import pygame
 import pygame_gui
 
-# Allow compatibility with older pygame_gui that used 'UICheckbox'
+# Allow compatibility with pygame_gui versions using different checkbox names
 if hasattr(pygame_gui.elements, "UICheckBox"):
     _UICheckBox = pygame_gui.elements.UICheckBox
-else:  # pragma: no cover - depends on external package version
+elif hasattr(pygame_gui.elements, "UICheckbox"):  # pragma: no cover - older versions
     _UICheckBox = pygame_gui.elements.UICheckbox
+else:  # pragma: no cover - unexpected version
+    raise ImportError("UICheckBox class not found in pygame_gui.elements")
 
 from . import constants as C
 from .presets import PRESETS
