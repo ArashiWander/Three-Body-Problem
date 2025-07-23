@@ -1,0 +1,4 @@
+# file: /home/runner/work/Three-Body-Problem/Three-Body-Problem/threebody/physics_utils.py
+# hypothesis_version: 6.136.2
+
+[0.0, 1e-18, 1e-15, 1e-09, 0.001, 0.2, 0.5, 0.7, 0.8, 0.9, 2.0, 'ForestRuth', 'RK4', 'Symplectic', 'Symplectic4', 'bounds', 'capacity', 'children', 'clear_trail', 'depth', 'max_depth', 'name', 'points', 'radius_pixels', 'update_physics_state']

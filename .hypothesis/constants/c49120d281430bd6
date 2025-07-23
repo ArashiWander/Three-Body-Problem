@@ -1,0 +1,4 @@
+# file: /home/runner/work/Three-Body-Problem/Three-Body-Problem/threebody/ui_manager.py
+# hypothesis_version: 6.136.2
+
+[100, 120, 145, 150, 165, 190, 3600, '#control_panel', '#title_label', 'Adaptive', 'Controls', 'GR Correction', 'Load', 'Play', 'RK4', 'Reset', 'Save', 'Settings', 'Show Field', 'Step', 'Symplectic', 'UICheckBox', 'UICheckbox']
