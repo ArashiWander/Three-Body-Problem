@@ -1,0 +1,4 @@
+# file: /home/runner/work/Three-Body-Problem/Three-Body-Problem/threebody/state_manager.py
+# hypothesis_version: 6.136.2
+
+[0.0, 255, 'color', 'fixed', 'mass', 'name', 'pos', 'radius', 'radius_pixels', 'vel']

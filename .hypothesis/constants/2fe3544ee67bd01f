@@ -1,0 +1,4 @@
+# file: /home/runner/work/Three-Body-Problem/Three-Body-Problem/threebody/simulation_full.py
+# hypothesis_version: 6.136.2
+
+[0.0, 1000.0, 399, '%Y-%m-%d', '--adaptive', '--gr', '--integrator', '--merge', '--nasa-date', '--nasa-kernel', '--preset', '--show-field', '--trail-length', '--use-gpu', '2024-01-01', 'Earth', 'ForestRuth', 'Pause', 'Play', 'Preset system', 'RK4', 'Sun', 'Sun & Earth', 'Symplectic', 'Symplectic4', 'Use adaptive RK4', '__main__', 'color', 'draw', 'fixed', 'mass', 'name', 'radius', 'set_trail_length', 'simulation_save.json', 'store_true', 'theme.json', 'update_trail', 'vx', 'vy', 'x', 'y']

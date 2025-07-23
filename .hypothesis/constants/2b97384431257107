@@ -1,0 +1,4 @@
+# file: /home/runner/work/Three-Body-Problem/Three-Body-Problem/threebody/presets.py
+# hypothesis_version: 6.136.2
+
+[-2.0, -0.97000436, -0.93240737, -0.86473146, -0.5, -0.24308753, 0.24308753, 0.387, 0.43236573, 0.46620368, 0.5, 0.723, 0.97000436, 1.0, 1.5, 1.524, 384400000.0, 7.342e+22, 3.301e+23, 6.417e+23, 4.867e+24, -15000, -10000, 1022, 5000, 15000, 24070, 29780, 30000, 35020, 47870, 'Binary Star', 'Body A', 'Body B', 'Body C', 'Central Mass', 'Earth', 'Earth & Moon', 'Empty', 'Figure 8', 'Inner Solar System', 'Mars', 'Mercury', 'Moon', 'Planet 1', 'Planet 2', 'Star A', 'Star B', 'Sun', 'Sun & Earth', 'Three-Body Chaos', 'Venus', 'color', 'fixed', 'mass', 'name', 'radius', 'vx', 'vy', 'x', 'y']
