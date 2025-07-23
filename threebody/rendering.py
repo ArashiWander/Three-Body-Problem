@@ -34,12 +34,12 @@ class Body:
                 "Use Body.from_meters() to convert to simulation units.",
                 UserWarning,
             )
-        self.pos = p[:3] # 内部存储的是模拟单位
+        self.pos = p[:3]  # 内部存储的是模拟单位
 
         v = np.asarray(vel, dtype=float).reshape(-1)
         if v.size < 3:
             v = np.pad(v, (0, 3 - v.size))
-        self.vel = v[:3] # 速度单位是 m/s
+        self.vel = v[:3]  # 速度单位是 m/s
 
         self.acc = np.zeros(3, dtype=np.float64)
         self.fixed = fixed
@@ -62,7 +62,7 @@ class Body:
         使用米为单位的坐标创建一个天体。
         这是一个非常重要的辅助函数，它能确保单位的正确转换。
         如果你有以米为单位的真实世界坐标，请使用此函数创建天体。
-        
+
         参数:
             pos_m (array-like): 以米为单位的位置坐标。
             vel_m_s (array-like): 以米/秒为单位的速度。
@@ -71,7 +71,7 @@ class Body:
         pos_sim = np.asarray(pos_m, dtype=float) / C.SPACE_SCALE
         return Body(
             mass,
-            pos_sim, # 传入转换后的模拟单位位置
+            pos_sim,  # 传入转换后的模拟单位位置
             vel_m_s,
             color,
             radius,
@@ -103,7 +103,7 @@ class Body:
         screen_pos = self.pos[:2] * zoom + pan_offset
         self.last_screen_pos = screen_pos
         self.trail.append(screen_pos.copy())
-        
+
     # ... 其他方法与原文件相同 ...
     def clear_trail(self):
         self.trail.clear()
@@ -132,17 +132,21 @@ class Body:
             font = pygame.font.Font(None, 16)
             label = font.render(self.name, True, C.WHITE)
             screen.blit(label, (x + radius + 2, y - radius - 2))
-    
+
     def get_screen_pos(self, zoom, pan_offset):
         screen_pos = self.pos[:2] * zoom + pan_offset
         return (int(screen_pos[0]), int(screen_pos[1]))
 
     def handle_boundary_collision(self, bounds_sim, elasticity=0.8):
-        if self.fixed: return
-        new_pos, new_vel = apply_boundary_conditions_jit(self.pos[:2], self.vel[:2], bounds_sim, elasticity)
-        if not np.array_equal(new_pos, self.pos[:2]) or not np.array_equal(new_vel, self.vel[:2]):
+        if self.fixed:
+            return
+        new_pos, new_vel = apply_boundary_conditions_jit(
+            self.pos[:2], self.vel[:2], bounds_sim, elasticity)
+        if (not np.array_equal(new_pos, self.pos[:2]) or
+                not np.array_equal(new_vel, self.vel[:2])):
             self.pos[:2] = new_pos
             self.vel[:2] = new_vel
+
 
 def render_gravitational_field(screen, bodies, g_constant, zoom, pan_offset):
     width, height = screen.get_size()

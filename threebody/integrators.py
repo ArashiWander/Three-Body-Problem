@@ -1,6 +1,7 @@
 import numpy as np
 from . import constants as C
 
+
 def compute_accelerations(
     positions: np.ndarray,
     masses: np.ndarray,
@@ -65,39 +66,39 @@ def compute_accelerations(
         for j in range(i + 1, n):
             if fixed_mask[j]:
                 continue
-                
+
             # 计算天体i和j之间的相对位置向量 (从i指向j)
             r_vec_ij = positions_3d[j] - positions_3d[i]
             dist_sq_sim = xp.sum(r_vec_ij ** 2)
-            
+
             # 跳过距离为零的情况
             if dist_sq_sim == 0:
                 continue
-                
+
             # 转换到米制距离
             dist_sq_m = dist_sq_sim * scale_sq
-            
+
             # 软化因子
             softening_sq = xp.maximum(C.SOFTENING_FACTOR_SQ, 1e-20 * scale_sq)
-            
+
             # 计算引力加速度的大小
             with xp.errstate(divide="ignore", invalid="ignore"):
                 denominator = dist_sq_m + softening_sq
                 if denominator == 0 or not xp.isfinite(denominator):
                     continue
-                    
+
                 # a_i = G * m_j / r²  (j对i的加速度)
                 # a_j = G * m_i / r²  (i对j的加速度)
                 accel_mag_i = g_constant * masses[j] / denominator
                 accel_mag_j = g_constant * masses[i] / denominator
-                
+
             if not (xp.isfinite(accel_mag_i) and xp.isfinite(accel_mag_j)):
                 continue
-                
+
             # 单位方向向量
             dist_sim = xp.sqrt(dist_sq_sim)
             r_hat_ij = r_vec_ij / dist_sim  # 从i指向j的单位向量
-            
+
             # 牛顿第三定律：天体间的力大小相等方向相反
             # 天体j对天体i的加速度（指向j，即引力）
             acc[i] += accel_mag_i * r_hat_ij
@@ -109,26 +110,26 @@ def compute_accelerations(
         for i in range(n):
             if fixed_mask[i]:
                 continue
-            
+
             v_vec_i = velocities_3d[i]
             for j in range(n):
                 if i == j or fixed_mask[j]:
                     continue
-                    
+
                 r_vec_m = (positions_3d[j] - positions_3d[i]) * C.SPACE_SCALE
                 r_sq_m = xp.sum(r_vec_m ** 2)
-                
+
                 if r_sq_m == 0:
                     continue
-                    
+
                 L_vec = xp.cross(r_vec_m, v_vec_i)
                 L_sq = xp.sum(L_vec ** 2)
-                
+
                 with xp.errstate(divide="ignore", invalid="ignore"):
                     gr_factor = -3.0 * g_constant * masses[j] * L_sq / (
                         (C.C_LIGHT ** 2) * (r_sq_m ** 2)
                     )
-                
+
                 if xp.isfinite(gr_factor):
                     r_hat_m = r_vec_m / xp.sqrt(r_sq_m)
                     acc[i] += gr_factor * r_hat_m
@@ -137,6 +138,7 @@ def compute_accelerations(
     if use_gpu:
         acc = xp.asnumpy(acc)
     return acc
+
 
 def rk4_step_arrays(
     positions,
@@ -150,7 +152,7 @@ def rk4_step_arrays(
     use_gpu: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """使用RK4积分器。"""
-    
+
     def deriv(pos, vel):
         return compute_accelerations(
             pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu
@@ -158,7 +160,7 @@ def rk4_step_arrays(
 
     k1_v = deriv(positions, velocities)
     k1_p = velocities / C.SPACE_SCALE
-    
+
     k2_v = deriv(positions + 0.5 * dt * k1_p, velocities + 0.5 * dt * k1_v)
     k2_p = (velocities + 0.5 * dt * k1_v) / C.SPACE_SCALE
 
@@ -167,7 +169,7 @@ def rk4_step_arrays(
 
     k4_v = deriv(positions + dt * k3_p, velocities + dt * k3_v)
     k4_p = (velocities + dt * k3_v) / C.SPACE_SCALE
-    
+
     pos_new = positions + (dt / 6.0) * (k1_p + 2*k2_p + 2*k3_p + k4_p)
     vel_new = velocities + (dt / 6.0) * (k1_v + 2*k2_v + 2*k3_v + k4_v)
 
@@ -175,6 +177,7 @@ def rk4_step_arrays(
     vel_new[fixed_mask] = velocities[fixed_mask]
 
     return pos_new, vel_new
+
 
 def leapfrog_step_arrays(
     positions,
@@ -188,7 +191,7 @@ def leapfrog_step_arrays(
     use_gpu: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """使用Leapfrog (kick-drift-kick)辛积分器推进模拟。"""
-    
+
     # half kick
     accel_initial = compute_accelerations(
         positions, masses, fixed_mask, g_constant, use_gr, velocities, use_gpu=use_gpu

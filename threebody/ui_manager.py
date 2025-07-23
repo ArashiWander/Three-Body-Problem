@@ -24,6 +24,8 @@ from . import constants as C
 from .presets import PRESETS
 from .analysis import calculate_orbital_elements
 # --- KEPT FROM THE 'codex' BRANCH ---
+
+
 class ControlPanel:
     """Helper to build and manage the on-screen control panel for presets and playback."""
 
@@ -163,12 +165,12 @@ class UIManager:
                 0, 0, C.UI_SIDEBAR_WIDTH, C.HEIGHT - C.UI_BOTTOM_HEIGHT,
             ),
             manager=self.manager,
-            object_id="#control_panel", # Consider a different ID to avoid style conflicts
+            object_id="#control_panel",  # Consider a different ID to avoid style conflicts
         )
 
         pygame_gui.elements.UILabel(
             pygame.Rect(0, 0, panel.rect.width, 30),
-            text="Settings", # Changed text to differentiate panels
+            text="Settings",  # Changed text to differentiate panels
             manager=self.manager,
             container=panel,
             object_id="#title_label",
