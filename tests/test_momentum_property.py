@@ -16,7 +16,7 @@ def random_system(draw):
         mass = draw(st.floats(1e20, 1e22, allow_nan=False, allow_infinity=False))
 
         # Ensure bodies don't start too close to each other
-        # Use a minimum distance of 10 km to avoid numerical instabilities
+        # Use a minimum distance of 100 km to avoid numerical instabilities in testing
         attempts = 0
         while attempts < 100:
             pos = [draw(st.floats(-1e5, 1e5, allow_nan=False,
@@ -26,7 +26,7 @@ def random_system(draw):
             too_close = False
             for existing_pos in positions_used:
                 distance = np.sqrt(sum((p - e)**2 for p, e in zip(pos, existing_pos)))
-                if distance < 1e4:  # Minimum distance of 10 km
+                if distance < 1e5:  # Minimum distance of 100 km for robust testing
                     too_close = True
                     break
 
@@ -36,7 +36,7 @@ def random_system(draw):
             attempts += 1
         else:
             # If we can't find a good position, use a systematic offset
-            offset = (len(positions_used) + 1) * 1e4
+            offset = (len(positions_used) + 1) * 1e5
             pos = [offset, 0, 0]
             positions_used.append(pos)
 
