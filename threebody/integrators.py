@@ -44,7 +44,6 @@ def compute_accelerations(
             positions,
             xp.zeros((n, 1), dtype=positions.dtype),
         ])
- 
     else:
         positions_3d = positions
 
@@ -59,55 +58,80 @@ def compute_accelerations(
     acc = xp.zeros_like(positions_3d, dtype=xp.float64)
     scale_sq = C.SPACE_SCALE ** 2
 
+    # 使用严格的成对力计算确保牛顿第三定律精确满足
     for i in range(n):
         if fixed_mask[i]:
             continue
+        for j in range(i + 1, n):
+            if fixed_mask[j]:
+                continue
+                
+            # 计算天体i和j之间的相对位置向量 (从i指向j)
+            r_vec_ij = positions_3d[j] - positions_3d[i]
+            dist_sq_sim = xp.sum(r_vec_ij ** 2)
             
-        # 为了提高效率，只计算对天体i的作用力
-        # 使用向量化计算与天体i的相对位置和距离
-        r_vecs = positions_3d - positions_3d[i]
-        dist_sq_sim = xp.einsum('ij,ij->i', r_vecs, r_vecs)
-
-        # 避免与自身计算
-        dist_sq_sim[i] = xp.inf
-        
-        # 计算牛顿引力
-        dist_sq_m = dist_sq_sim * scale_sq
-        # 使用 np.errstate 避免除零警告
-        with xp.errstate(divide="ignore", invalid="ignore"):
+            # 跳过距离为零的情况
+            if dist_sq_sim == 0:
+                continue
+                
+            # 转换到米制距离
+            dist_sq_m = dist_sq_sim * scale_sq
+            
             # 软化因子
-            denominator = dist_sq_m + C.SOFTENING_FACTOR_SQ
-            factor = g_constant / denominator
-        
-        # 将无用的值（inf, nan）替换为0
-        factor[~xp.isfinite(factor)] = 0.0
-        
-        # 方向向量
-        norm_r_vecs = r_vecs * (1.0 / xp.sqrt(dist_sq_sim))[:, xp.newaxis]
-        norm_r_vecs[~xp.isfinite(norm_r_vecs)] = 0.0
-        
-        # 计算总牛顿加速度
-        newtonian_acc = xp.sum(norm_r_vecs * (factor * masses)[:, xp.newaxis], axis=0)
-        acc[i] += newtonian_acc
-
-        # 计算广义相对论修正
-        if use_gr_correction and velocities is not None:
-            v_vec_i = velocities_3d[i]
-            r_vecs_m = r_vecs * C.SPACE_SCALE
-            L_vecs = xp.cross(r_vecs_m, v_vec_i)
-            L_sq = xp.einsum("ij,ij->i", L_vecs, L_vecs)
-            r_m_sq = dist_sq_m
-            r_hat = norm_r_vecs
-
-            mask = xp.arange(n) != i
+            softening_sq = xp.maximum(C.SOFTENING_FACTOR_SQ, 1e-20 * scale_sq)
+            
+            # 计算引力加速度的大小
             with xp.errstate(divide="ignore", invalid="ignore"):
-                gr_factors = -3.0 * g_constant * masses * L_sq / (
-                    (C.C_LIGHT ** 2) * (r_m_sq ** 2)
-                )
-            gr_factors[~mask] = 0.0
-            gr_factors[~xp.isfinite(gr_factors)] = 0.0
-            gr_acc = gr_factors[:, xp.newaxis] * r_hat
-            acc[i] += xp.sum(gr_acc, axis=0)
+                denominator = dist_sq_m + softening_sq
+                if denominator == 0 or not xp.isfinite(denominator):
+                    continue
+                    
+                # a_i = G * m_j / r²  (j对i的加速度)
+                # a_j = G * m_i / r²  (i对j的加速度)
+                accel_mag_i = g_constant * masses[j] / denominator
+                accel_mag_j = g_constant * masses[i] / denominator
+                
+            if not (xp.isfinite(accel_mag_i) and xp.isfinite(accel_mag_j)):
+                continue
+                
+            # 单位方向向量
+            dist_sim = xp.sqrt(dist_sq_sim)
+            r_hat_ij = r_vec_ij / dist_sim  # 从i指向j的单位向量
+            
+            # 牛顿第三定律：天体间的力大小相等方向相反
+            # 天体j对天体i的加速度（指向j，即引力）
+            acc[i] += accel_mag_i * r_hat_ij
+            # 天体i对天体j的加速度（指向i，即引力）
+            acc[j] -= accel_mag_j * r_hat_ij  # 注意负号
+
+    # 广义相对论修正（简化版，仅当启用时）
+    if use_gr_correction and velocities is not None:
+        for i in range(n):
+            if fixed_mask[i]:
+                continue
+            
+            v_vec_i = velocities_3d[i]
+            for j in range(n):
+                if i == j or fixed_mask[j]:
+                    continue
+                    
+                r_vec_m = (positions_3d[j] - positions_3d[i]) * C.SPACE_SCALE
+                r_sq_m = xp.sum(r_vec_m ** 2)
+                
+                if r_sq_m == 0:
+                    continue
+                    
+                L_vec = xp.cross(r_vec_m, v_vec_i)
+                L_sq = xp.sum(L_vec ** 2)
+                
+                with xp.errstate(divide="ignore", invalid="ignore"):
+                    gr_factor = -3.0 * g_constant * masses[j] * L_sq / (
+                        (C.C_LIGHT ** 2) * (r_sq_m ** 2)
+                    )
+                
+                if xp.isfinite(gr_factor):
+                    r_hat_m = r_vec_m / xp.sqrt(r_sq_m)
+                    acc[i] += gr_factor * r_hat_m
 
     acc = acc[:, :positions.shape[1]]  # 返回与输入维度一致的加速度
     if use_gpu:
