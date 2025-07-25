@@ -47,7 +47,8 @@ INITIAL_G = G_REAL
 TIME_STEP_BASE = 600
 SPEED_FACTOR = 1.0
 # Length scale used to soften gravitational interactions (in metres)
-SOFTENING_LENGTH = 1.0
+# Increased from 1.0 to provide better numerical stability for close approaches
+SOFTENING_LENGTH = 1e-8
 SOFTENING_FACTOR_SQ = SOFTENING_LENGTH**2
 VELOCITY_DRAG_SCALE = 10000.0
 

@@ -82,8 +82,9 @@ def compute_accelerations(
         # 将无用的值（inf, nan）替换为0
         factor[~xp.isfinite(factor)] = 0.0
         
-        # 方向向量
-        norm_r_vecs = r_vecs * (1.0 / xp.sqrt(dist_sq_sim))[:, xp.newaxis]
+        # 方向向量，添加数值稳定性处理
+        sqrt_dist_sq = xp.sqrt(dist_sq_sim + 1e-30)  # 避免除零
+        norm_r_vecs = r_vecs / sqrt_dist_sq[:, xp.newaxis]
         norm_r_vecs[~xp.isfinite(norm_r_vecs)] = 0.0
         
         # 计算总牛顿加速度
