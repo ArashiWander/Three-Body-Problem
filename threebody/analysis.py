@@ -6,6 +6,7 @@ from .physics_utils import calculate_system_energies
 import csv
 import os
 
+
 def calculate_orbital_elements(body, central_body):
     """Return the orbital elements of ``body`` relative to ``central_body``."""
     if body is None or central_body is None or body.mass <= 0:
@@ -19,30 +20,28 @@ def calculate_orbital_elements(body, central_body):
 
     r = np.linalg.norm(r_vec) * C.SPACE_SCALE
     v = np.linalg.norm(v_vec)
-    
+
     mu = C.G_REAL * (central_body.mass + body.mass)
 
     specific_orbital_energy = v**2 / 2 - mu / r
-    
+
     h_vec = np.cross(r_vec * C.SPACE_SCALE, v_vec)
-    h = np.linalg.norm(h_vec)
 
     e_vec = (np.cross(v_vec, h_vec) / mu) - (r_vec * C.SPACE_SCALE / r)
     eccentricity = np.linalg.norm(e_vec)
 
-    if abs(specific_orbital_energy) < 1e-9: # parabolic orbit
+    if abs(specific_orbital_energy) < 1e-9:  # parabolic orbit
         semi_major_axis = float('inf')
         period = float('inf')
     else:
         semi_major_axis = -mu / (2 * specific_orbital_energy)
-        if semi_major_axis > 0: # elliptical orbit
-             period = 2 * np.pi * np.sqrt(semi_major_axis**3 / mu)
-        else: # hyperbolic orbit
+        if semi_major_axis > 0:  # elliptical orbit
+            period = 2 * np.pi * np.sqrt(semi_major_axis**3 / mu)
+        else:  # hyperbolic orbit
             period = float('inf')
 
     periapsis = semi_major_axis * (1 - eccentricity) if semi_major_axis > 0 else 0
     apoapsis = semi_major_axis * (1 + eccentricity) if semi_major_axis > 0 else 0
-    
     return {
         'semi_major_axis': semi_major_axis,
         'eccentricity': eccentricity,
@@ -51,6 +50,7 @@ def calculate_orbital_elements(body, central_body):
         'apoapsis': apoapsis,
         'speed': v
     }
+
 
 class EnergyMonitor:
     """Monitor and plot the change in total system energy."""
@@ -72,19 +72,19 @@ class EnergyMonitor:
     def draw(self, surface):
         if len(self.history) < 2:
             return
-        
+
         width, height = surface.get_size()
         points = []
         max_drift = max(abs(p) for p in self.history) if self.history else 1e-9
-        max_drift = max(max_drift, 1e-9) # avoid division by zero
+        max_drift = max(max_drift, 1e-9)  # avoid division by zero
 
         for i, drift in enumerate(self.history):
             x = (i / (self.history.maxlen - 1)) * width
             y = height / 2 - (drift / max_drift) * (height / 2 - 5)
             points.append((x, y))
-        
+
         pygame.draw.lines(surface, (255, 100, 100), False, points, 2)
-        
+
         # draw the 0% baseline
         pygame.draw.line(surface, (100, 100, 100), (0, height / 2), (width, height / 2), 1)
 

@@ -7,7 +7,6 @@ from .integrators import (
     forest_ruth_step_arrays,
 )
 from .physics import Body as PhysicsBody
-from .jit import apply_boundary_conditions_jit
 
 
 class _QuadTree:
@@ -108,6 +107,7 @@ class _QuadTree:
                 child.query_circle(center, radius, out)
         return out
 
+
 def step_simulation(
     bodies,
     dt,
@@ -187,6 +187,7 @@ def step_simulation(
 
 # --- 以下是所有函数的完整实现 ---
 
+
 def calculate_system_energies(bodies, g_constant):
     """计算系统的动能、势能和总能量。"""
     kinetic = 0.0
@@ -196,7 +197,7 @@ def calculate_system_energies(bodies, g_constant):
             continue
         speed_sq = np.dot(body.vel, body.vel)
         kinetic += 0.5 * body.mass * speed_sq
-        
+
     num_bodies = len(bodies)
     for i in range(num_bodies):
         for j in range(i + 1, num_bodies):
@@ -221,7 +222,7 @@ def calculate_center_of_mass(bodies):
             total_mass += body.mass
             weighted_pos_sum += body.pos * body.mass
             weighted_vel_sum += body.vel * body.mass
-    
+
     if not has_mass or total_mass == 0:
         fixed_bodies = [b for b in bodies if b.fixed]
         if fixed_bodies:
@@ -229,10 +230,11 @@ def calculate_center_of_mass(bodies):
             com_vel_m_s = np.zeros(3)
             return com_pos_sim, com_vel_m_s
         return None, None
-        
+
     com_pos_sim = weighted_pos_sum / total_mass
     com_vel_m_s = weighted_vel_sum / total_mass
     return com_pos_sim, com_vel_m_s
+
 
 def perform_rk4_step(bodies, dt, g_constant, *, use_gpu: bool = False):
     """对一组天体执行一个RK4步长。（为自适应步长提供的辅助函数）"""
@@ -270,21 +272,24 @@ def adaptive_rk4_step(
     """执行一个自适应RK4步长，并返回建议的下一个步长。"""
     if not bodies:
         return 0.0, current_dt
-        
+
     dt = max(C.MIN_TIME_STEP, min(current_dt, C.MAX_TIME_STEP))
-    
+
     # 执行一个完整步长
     pos1, vel1 = perform_rk4_step(bodies, dt, g_constant, use_gpu=use_gpu)
-    
+
     # 执行两个半步长
     pos_half, vel_half = perform_rk4_step(bodies, dt / 2.0, g_constant, use_gpu=use_gpu)
-    temp_bodies = [PhysicsBody(b.mass, pos_half[i], vel_half[i], fixed=b.fixed) for i, b in enumerate(bodies)]
+    temp_bodies = [
+        PhysicsBody(b.mass, pos_half[i], vel_half[i], fixed=b.fixed)
+        for i, b in enumerate(bodies)
+    ]
     pos2, vel2 = perform_rk4_step(temp_bodies, dt / 2.0, g_constant, use_gpu=use_gpu)
-    
+
     # 计算误差
     max_rel_error = 0.0
     initial_pos_sim = np.array([b.pos for b in bodies])
-    
+
     for i, body in enumerate(bodies):
         if body.fixed:
             continue
@@ -299,7 +304,7 @@ def adaptive_rk4_step(
         scale_factor = 2.0
     else:
         scale_factor = safety_factor * (error_tolerance / max_rel_error) ** 0.2
-        
+
     dt_new = dt * scale_factor
     dt_new = max(C.MIN_TIME_STEP, min(dt_new, C.MAX_TIME_STEP))
 
@@ -313,7 +318,11 @@ def adaptive_rk4_step(
             else:
                 body.pos = pos2[i]
                 body.vel = vel2[i]
-            if use_boundaries and bounds_sim is not None and hasattr(body, "handle_boundary_collision"):
+            boundary_condition = (
+                use_boundaries and bounds_sim is not None
+                and hasattr(body, "handle_boundary_collision")
+            )
+            if boundary_condition:
                 body.handle_boundary_collision(bounds_sim)
         return dt, dt_new
     else:
@@ -467,8 +476,8 @@ def get_world_bounds_sim(zoom, pan_offset):
     sim_height_pixels = C.HEIGHT - C.UI_BOTTOM_HEIGHT
     min_screen = np.array([0, 0])
     max_screen = np.array([sim_width_pixels, sim_height_pixels])
-    
+
     min_world_sim = (min_screen - pan_offset) / (zoom + 1e-18)
     max_world_sim = (max_screen - pan_offset) / (zoom + 1e-18)
-    
+
     return (min_world_sim[0], min_world_sim[1], max_world_sim[0], max_world_sim[1])

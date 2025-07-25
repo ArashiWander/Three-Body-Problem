@@ -1,0 +1,4 @@
+# file: /home/runner/work/Three-Body-Problem/Three-Body-Problem/threebody/analysis.py
+# hypothesis_version: 6.136.4
+
+[1e-12, 1e-09, 100, 200, 255, 500, ',', 'apoapsis', 'eccentricity', 'energy_drift_percent', 'inf', 'periapsis', 'period', 'semi_major_axis', 'speed', 'step', 'w']

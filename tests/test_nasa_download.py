@@ -2,7 +2,6 @@ import http.server
 import socketserver
 import threading
 import os
-from pathlib import Path
 
 from threebody.nasa import download_ephemeris
 
