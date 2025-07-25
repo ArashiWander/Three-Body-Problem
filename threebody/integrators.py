@@ -1,6 +1,7 @@
 import numpy as np
 from . import constants as C
 
+
 def compute_accelerations(
     positions: np.ndarray,
     masses: np.ndarray,
@@ -44,7 +45,7 @@ def compute_accelerations(
             positions,
             xp.zeros((n, 1), dtype=positions.dtype),
         ])
- 
+
     else:
         positions_3d = positions
 
@@ -62,7 +63,7 @@ def compute_accelerations(
     for i in range(n):
         if fixed_mask[i]:
             continue
-            
+
         # 为了提高效率，只计算对天体i的作用力
         # 使用向量化计算与天体i的相对位置和距离
         r_vecs = positions_3d - positions_3d[i]
@@ -70,7 +71,7 @@ def compute_accelerations(
 
         # 避免与自身计算
         dist_sq_sim[i] = xp.inf
-        
+
         # 计算牛顿引力
         dist_sq_m = dist_sq_sim * scale_sq
         # 使用 np.errstate 避免除零警告
@@ -78,14 +79,15 @@ def compute_accelerations(
             # 软化因子
             denominator = dist_sq_m + C.SOFTENING_FACTOR_SQ
             factor = g_constant / denominator
-        
+
         # 将无用的值（inf, nan）替换为0
         factor[~xp.isfinite(factor)] = 0.0
-        
-        # 方向向量
-        norm_r_vecs = r_vecs * (1.0 / xp.sqrt(dist_sq_sim))[:, xp.newaxis]
+
+        # 方向向量，添加数值稳定性处理
+        sqrt_dist_sq = xp.sqrt(dist_sq_sim + 1e-30)  # 避免除零
+        norm_r_vecs = r_vecs / sqrt_dist_sq[:, xp.newaxis]
         norm_r_vecs[~xp.isfinite(norm_r_vecs)] = 0.0
-        
+
         # 计算总牛顿加速度
         newtonian_acc = xp.sum(norm_r_vecs * (factor * masses)[:, xp.newaxis], axis=0)
         acc[i] += newtonian_acc
@@ -114,6 +116,7 @@ def compute_accelerations(
         acc = xp.asnumpy(acc)
     return acc
 
+
 def rk4_step_arrays(
     positions,
     velocities,
@@ -126,7 +129,7 @@ def rk4_step_arrays(
     use_gpu: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """使用RK4积分器。"""
-    
+
     def deriv(pos, vel):
         return compute_accelerations(
             pos, masses, fixed_mask, g_constant, use_gr, vel, use_gpu=use_gpu
@@ -134,7 +137,7 @@ def rk4_step_arrays(
 
     k1_v = deriv(positions, velocities)
     k1_p = velocities / C.SPACE_SCALE
-    
+
     k2_v = deriv(positions + 0.5 * dt * k1_p, velocities + 0.5 * dt * k1_v)
     k2_p = (velocities + 0.5 * dt * k1_v) / C.SPACE_SCALE
 
@@ -143,7 +146,7 @@ def rk4_step_arrays(
 
     k4_v = deriv(positions + dt * k3_p, velocities + dt * k3_v)
     k4_p = (velocities + dt * k3_v) / C.SPACE_SCALE
-    
+
     pos_new = positions + (dt / 6.0) * (k1_p + 2*k2_p + 2*k3_p + k4_p)
     vel_new = velocities + (dt / 6.0) * (k1_v + 2*k2_v + 2*k3_v + k4_v)
 
@@ -151,6 +154,7 @@ def rk4_step_arrays(
     vel_new[fixed_mask] = velocities[fixed_mask]
 
     return pos_new, vel_new
+
 
 def leapfrog_step_arrays(
     positions,
@@ -164,7 +168,7 @@ def leapfrog_step_arrays(
     use_gpu: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """使用Leapfrog (kick-drift-kick)辛积分器推进模拟。"""
-    
+
     # half kick
     accel_initial = compute_accelerations(
         positions, masses, fixed_mask, g_constant, use_gr, velocities, use_gpu=use_gpu

@@ -79,4 +79,3 @@ def test_leapfrog_integrator_accuracy():
     earth_final_pos = positions[1]
     assert math.isclose(e0, e1, rel_tol=1e-6)
     assert np.allclose(earth_final_pos, [r, 0.0, 0.0], atol=5e-2)
-

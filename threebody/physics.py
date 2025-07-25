@@ -68,6 +68,7 @@ class Body:
         pos_sim = np.asarray(pos_m, dtype=float) / SPACE_SCALE
         return Body(mass, pos_sim, vel_m_s, fixed=fixed)
 
+
 def accelerations(bodies, g_constant=G_REAL):
     """Compute accelerations on each body."""
     if not bodies:
